@@ -179,7 +179,13 @@ let volume = 0.7;
 let masterGain = null;
 
 // Initialize Strudel
-await initStrudel();
+try {
+  await initStrudel();
+} catch (err) {
+  console.error('Failed to initialize Strudel:', err);
+  loadingEl.querySelector('.loading-text').textContent = 'Failed to load audio engine';
+  loadingEl.querySelector('.spinner').style.display = 'none';
+}
 loadingEl.classList.add('hidden');
 
 // Setup master volume control
@@ -215,7 +221,7 @@ function initVisualizer() {
 function resizeCanvas() {
   canvas.width = canvas.offsetWidth * window.devicePixelRatio;
   canvas.height = canvas.offsetHeight * window.devicePixelRatio;
-  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+  ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
 }
 
 // Calm, flowing visualizer
@@ -726,11 +732,17 @@ function updateTasksCount() {
   tasksCount.textContent = remaining > 0 ? `${remaining} left` : '';
 }
 
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
 function renderTasks() {
   taskList.innerHTML = tasks.map((task, i) => `
     <li class="task-item ${task.done ? 'done' : ''}" data-index="${i}">
       <span class="task-check"></span>
-      <span class="task-text">${task.text}</span>
+      <span class="task-text">${escapeHtml(task.text)}</span>
       <span class="task-delete">×</span>
     </li>
   `).join('');
