@@ -3,78 +3,376 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Strudel</title>
+  <title>Strudel Player</title>
   <style>
+    * { box-sizing: border-box; }
+
     body {
-      font-family: system-ui, sans-serif;
-      background: #1a1a2e;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
       color: #eee;
-      padding: 2rem;
       min-height: 100vh;
       margin: 0;
+      display: flex;
+      flex-direction: column;
     }
-    h1 { color: #f39c12; }
-    button {
-      background: #f39c12;
-      color: #1a1a2e;
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2rem;
+      width: 100%;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    h1 {
+      color: #f39c12;
+      font-size: 1.5rem;
+      margin: 0;
+      font-weight: 300;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+    }
+
+    #loading {
+      position: fixed;
+      inset: 0;
+      background: #1a1a2e;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 1rem;
+      z-index: 100;
+      transition: opacity 0.5s;
+    }
+
+    #loading.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 3px solid #333;
+      border-top-color: #f39c12;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    #visualizer {
+      width: 100%;
+      height: 200px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 16px;
+      margin-bottom: 1.5rem;
+    }
+
+    .player-card {
+      background: rgba(255,255,255,0.05);
+      border-radius: 16px;
+      padding: 1.5rem;
+      backdrop-filter: blur(10px);
+    }
+
+    .track-selector {
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+
+    .track-selector select {
+      width: 100%;
+      background: rgba(0,0,0,0.3);
+      color: #fff;
       border: none;
-      padding: 1rem 2rem;
-      font-size: 1.2rem;
+      padding: 1rem 1.5rem;
+      font-size: 1.1rem;
+      border-radius: 12px;
       cursor: pointer;
-      border-radius: 8px;
-      margin: 0.5rem;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23f39c12' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 1rem center;
+      transition: all 0.2s;
     }
-    button:hover { background: #e67e22; }
-    #controls { margin: 2rem 0; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-    select {
-      background: #0d0d1a;
-      color: #eee;
-      border: 2px solid #f39c12;
-      padding: 1rem;
-      font-size: 1rem;
-      border-radius: 8px;
+
+    .track-selector select:hover {
+      background-color: rgba(243, 156, 18, 0.1);
+    }
+
+    .track-selector select:focus {
+      outline: 2px solid #f39c12;
+      outline-offset: 2px;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .play-btn {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      border: none;
+      background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      box-shadow: 0 4px 20px rgba(243, 156, 18, 0.3);
+    }
+
+    .play-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 30px rgba(243, 156, 18, 0.4);
+    }
+
+    .play-btn:active {
+      transform: scale(0.95);
+    }
+
+    .play-btn svg {
+      width: 32px;
+      height: 32px;
+      fill: #1a1a2e;
+      margin-left: 4px;
+    }
+
+    .play-btn.playing svg {
+      margin-left: 0;
+    }
+
+    .skip-btn {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.2);
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .skip-btn:hover {
+      border-color: #f39c12;
+      background: rgba(243, 156, 18, 0.1);
+    }
+
+    .skip-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: #eee;
+    }
+
+    .volume-control {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0 1rem;
+    }
+
+    .volume-control svg {
+      width: 20px;
+      height: 20px;
+      fill: #888;
+      flex-shrink: 0;
+    }
+
+    .volume-slider {
+      flex: 1;
+      -webkit-appearance: none;
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(255,255,255,0.2);
       cursor: pointer;
     }
-    select:focus { outline: none; border-color: #e67e22; }
+
+    .volume-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #f39c12;
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+
+    .volume-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+
+    .info-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      color: #888;
+      padding: 0 0.5rem;
+    }
+
+    .bpm {
+      color: #f39c12;
+      font-weight: 600;
+    }
+
+    .code-section {
+      margin-top: 1.5rem;
+    }
+
+    .code-toggle {
+      background: none;
+      border: none;
+      color: #888;
+      cursor: pointer;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0;
+      transition: color 0.2s;
+    }
+
+    .code-toggle:hover {
+      color: #f39c12;
+    }
+
+    .code-toggle svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+      transition: transform 0.2s;
+    }
+
+    .code-toggle.open svg {
+      transform: rotate(90deg);
+    }
+
+    .code-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease-out;
+    }
+
+    .code-content.open {
+      max-height: 300px;
+    }
+
     pre {
-      background: #0d0d1a;
+      background: rgba(0,0,0,0.4);
       padding: 1rem;
       border-radius: 8px;
       overflow-x: auto;
+      font-size: 0.8rem;
+      line-height: 1.5;
+      margin: 0.5rem 0 0 0;
     }
-    #visualizer {
-      width: 100%;
-      height: 300px;
-      background: #0d0d1a;
-      border-radius: 8px;
-      margin-top: 2rem;
+
+    .keyboard-hint {
+      text-align: center;
+      font-size: 0.75rem;
+      color: #555;
+      margin-top: 1.5rem;
+    }
+
+    kbd {
+      background: rgba(255,255,255,0.1);
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-family: inherit;
+    }
+
+    @media (max-width: 600px) {
+      .container { padding: 1rem; }
+      h1 { font-size: 1.2rem; }
+      .play-btn { width: 70px; height: 70px; }
+      .skip-btn { width: 44px; height: 44px; }
     }
   </style>
 </head>
 <body>
-  <h1>Strudel Live Coding</h1>
-
-  <div id="controls">
-    <select id="track-select">
-      <option value="daftpunk">Daft Punk - Around The World</option>
-      <option value="bluemonday">New Order - Blue Monday</option>
-      <option value="sandstorm">Darude - Sandstorm</option>
-      <option value="technologic">Daft Punk - Technologic</option>
-      <option value="insomnia">Faithless - Insomnia</option>
-      <option value="children">Robert Miles - Children</option>
-      <option value="kernkraft">Zombie Nation - Kernkraft 400</option>
-      <option value="professional">deadmau5 - Professional Griefers</option>
-      <option value="levels">Avicii - Levels</option>
-      <option value="scary">Skrillex - Scary Monsters</option>
-    </select>
-    <button id="play">Play</button>
-    <button id="stop">Stop</button>
+  <div id="loading">
+    <div class="spinner"></div>
+    <div>Loading samples...</div>
   </div>
 
-  <canvas id="visualizer"></canvas>
+  <div class="container">
+    <header>
+      <h1>Strudel Player</h1>
+    </header>
 
-  <h2>Current Pattern:</h2>
-  <pre id="pattern-display">Daft Punk style - funky bass + filter sweep</pre>
+    <canvas id="visualizer"></canvas>
+
+    <div class="player-card">
+      <div class="track-selector">
+        <select id="track-select">
+          <option value="daftpunk">Daft Punk - Around The World</option>
+          <option value="bluemonday">New Order - Blue Monday</option>
+          <option value="sandstorm">Darude - Sandstorm</option>
+          <option value="technologic">Daft Punk - Technologic</option>
+          <option value="insomnia">Faithless - Insomnia</option>
+          <option value="children">Robert Miles - Children</option>
+          <option value="kernkraft">Zombie Nation - Kernkraft 400</option>
+          <option value="professional">deadmau5 - Professional Griefers</option>
+          <option value="levels">Avicii - Levels</option>
+          <option value="scary">Skrillex - Scary Monsters</option>
+        </select>
+      </div>
+
+      <div class="controls">
+        <button class="skip-btn" id="prev" title="Previous track">
+          <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+        </button>
+        <button class="play-btn" id="play" title="Play/Pause">
+          <svg id="play-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          <svg id="pause-icon" viewBox="0 0 24 24" style="display:none"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+        </button>
+        <button class="skip-btn" id="next" title="Next track">
+          <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+        </button>
+      </div>
+
+      <div class="volume-control">
+        <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+        <input type="range" class="volume-slider" id="volume" min="0" max="100" value="80">
+        <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+      </div>
+
+      <div class="info-bar">
+        <span id="track-info">Select a track</span>
+        <span class="bpm" id="bpm">120 BPM</span>
+      </div>
+
+      <div class="code-section">
+        <button class="code-toggle" id="code-toggle">
+          <svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+          Show pattern code
+        </button>
+        <div class="code-content" id="code-content">
+          <pre id="pattern-display"></pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="keyboard-hint">
+      <kbd>Space</kbd> Play/Pause &nbsp; <kbd>←</kbd> <kbd>→</kbd> Switch tracks
+    </div>
+  </div>
 
   <script type="module" src="/main.js"></script>
 </body>
