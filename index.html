@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Strudel</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      padding: 2rem;
+      min-height: 100vh;
+      margin: 0;
+    }
+    h1 { color: #f39c12; }
+    button {
+      background: #f39c12;
+      color: #1a1a2e;
+      border: none;
+      padding: 1rem 2rem;
+      font-size: 1.2rem;
+      cursor: pointer;
+      border-radius: 8px;
+      margin: 0.5rem;
+    }
+    button:hover { background: #e67e22; }
+    #controls { margin: 2rem 0; }
+    pre {
+      background: #0d0d1a;
+      padding: 1rem;
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+    #visualizer {
+      width: 100%;
+      height: 300px;
+      background: #0d0d1a;
+      border-radius: 8px;
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Strudel Live Coding</h1>
+
+  <div id="controls">
+    <button id="play">Play</button>
+    <button id="stop">Stop</button>
+  </div>
+
+  <canvas id="visualizer"></canvas>
+
+  <h2>Current Pattern:</h2>
+  <pre id="pattern-display">Daft Punk style - funky bass + filter sweep</pre>
+
+  <script type="module" src="/main.js"></script>
+</body>
+</html>
