@@ -417,3 +417,138 @@ document.addEventListener('keydown', (e) => {
       break;
   }
 });
+
+// Pomodoro Timer
+const timerTimeEl = document.getElementById('timer-time');
+const timerModeEl = document.getElementById('timer-mode');
+const timerStartBtn = document.getElementById('timer-start');
+const timerResetBtn = document.getElementById('timer-reset');
+const timerSkipBtn = document.getElementById('timer-skip');
+const presetBtns = document.querySelectorAll('.preset-btn');
+
+let timerInterval = null;
+let timerSeconds = 25 * 60;
+let timerRunning = false;
+let timerMode = 'focus'; // 'focus' or 'break'
+let focusDuration = 25;
+let breakDuration = 5;
+let sessionsCompleted = 0;
+
+function formatTime(seconds) {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
+function updateTimerDisplay() {
+  timerTimeEl.textContent = formatTime(timerSeconds);
+}
+
+function setTimerMode(mode) {
+  timerMode = mode;
+  timerModeEl.textContent = mode === 'focus' ? 'Focus' : 'Break';
+  timerModeEl.className = `timer-mode ${mode}`;
+  timerSeconds = (mode === 'focus' ? focusDuration : breakDuration) * 60;
+  updateTimerDisplay();
+}
+
+function startTimer() {
+  if (timerRunning) {
+    // Pause
+    clearInterval(timerInterval);
+    timerRunning = false;
+    timerStartBtn.textContent = 'Resume';
+  } else {
+    // Start
+    timerRunning = true;
+    timerStartBtn.textContent = 'Pause';
+
+    // Auto-play music when starting focus timer
+    if (timerMode === 'focus' && !isPlaying) {
+      play();
+    }
+
+    timerInterval = setInterval(() => {
+      timerSeconds--;
+      updateTimerDisplay();
+
+      if (timerSeconds <= 0) {
+        clearInterval(timerInterval);
+        timerRunning = false;
+
+        // Play notification sound
+        const audioCtx = globalThis.getAudioContext();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.frequency.value = 800;
+        gain.gain.value = 0.3;
+        osc.start();
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+        osc.stop(audioCtx.currentTime + 0.5);
+
+        // Switch mode
+        if (timerMode === 'focus') {
+          sessionsCompleted++;
+          setTimerMode('break');
+        } else {
+          setTimerMode('focus');
+        }
+
+        timerStartBtn.textContent = 'Start';
+
+        // Show notification if permitted
+        if (Notification.permission === 'granted') {
+          new Notification('Drift Timer', {
+            body: timerMode === 'focus' ? 'Focus time! Get back to work.' : 'Break time! Take a rest.',
+            icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🎵</text></svg>'
+          });
+        }
+      }
+    }, 1000);
+  }
+}
+
+function resetTimer() {
+  clearInterval(timerInterval);
+  timerRunning = false;
+  timerStartBtn.textContent = 'Start';
+  timerSeconds = (timerMode === 'focus' ? focusDuration : breakDuration) * 60;
+  updateTimerDisplay();
+}
+
+function skipTimer() {
+  clearInterval(timerInterval);
+  timerRunning = false;
+  timerStartBtn.textContent = 'Start';
+
+  if (timerMode === 'focus') {
+    setTimerMode('break');
+  } else {
+    setTimerMode('focus');
+  }
+}
+
+// Timer event listeners
+timerStartBtn.addEventListener('click', startTimer);
+timerResetBtn.addEventListener('click', resetTimer);
+timerSkipBtn.addEventListener('click', skipTimer);
+
+presetBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    presetBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    focusDuration = parseInt(btn.dataset.focus);
+    breakDuration = parseInt(btn.dataset.break);
+
+    resetTimer();
+    setTimerMode('focus');
+  });
+});
+
+// Request notification permission
+if ('Notification' in window && Notification.permission === 'default') {
+  Notification.requestPermission();
+}

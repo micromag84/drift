@@ -275,6 +275,124 @@
       letter-spacing: 0.5px;
     }
 
+    .timer-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 20px;
+      padding: 1.5rem;
+      margin-top: 1.5rem;
+    }
+
+    .timer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+    }
+
+    .timer-title {
+      font-size: 0.7rem;
+      color: #6b7394;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+    }
+
+    .timer-mode {
+      font-size: 0.65rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 20px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+    }
+
+    .timer-mode.focus {
+      background: rgba(124, 158, 184, 0.2);
+      color: #7c9eb8;
+    }
+
+    .timer-mode.break {
+      background: rgba(155, 142, 194, 0.2);
+      color: #b8a9c9;
+    }
+
+    .timer-display {
+      text-align: center;
+      margin-bottom: 1.25rem;
+    }
+
+    .timer-time {
+      font-size: 3rem;
+      font-weight: 200;
+      color: #e0e4ef;
+      letter-spacing: 4px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .timer-controls {
+      display: flex;
+      justify-content: center;
+      gap: 0.75rem;
+    }
+
+    .timer-btn {
+      padding: 0.6rem 1.25rem;
+      border-radius: 10px;
+      border: 1px solid rgba(124, 158, 184, 0.2);
+      background: transparent;
+      color: #9ba4c0;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .timer-btn:hover {
+      border-color: #7c9eb8;
+      color: #e0e4ef;
+      background: rgba(124, 158, 184, 0.1);
+    }
+
+    .timer-btn.primary {
+      background: rgba(124, 158, 184, 0.15);
+      border-color: rgba(124, 158, 184, 0.3);
+      color: #7c9eb8;
+    }
+
+    .timer-btn.primary:hover {
+      background: rgba(124, 158, 184, 0.25);
+    }
+
+    .timer-presets {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .preset-btn {
+      padding: 0.4rem 0.7rem;
+      border-radius: 6px;
+      border: none;
+      background: rgba(255,255,255,0.05);
+      color: #6b7394;
+      font-size: 0.65rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .preset-btn:hover {
+      background: rgba(124, 158, 184, 0.15);
+      color: #9ba4c0;
+    }
+
+    .preset-btn.active {
+      background: rgba(124, 158, 184, 0.2);
+      color: #7c9eb8;
+    }
+
     .keyboard-hint {
       text-align: center;
       font-size: 0.75rem;
@@ -397,6 +515,26 @@
       <div class="info-bar">
         <span class="mood-name" id="track-info">Deep Focus</span>
         <span class="bpm" id="bpm">70 BPM</span>
+      </div>
+    </div>
+
+    <div class="timer-card">
+      <div class="timer-header">
+        <span class="timer-title">Pomodoro Timer</span>
+        <span class="timer-mode focus" id="timer-mode">Focus</span>
+      </div>
+      <div class="timer-display">
+        <span class="timer-time" id="timer-time">25:00</span>
+      </div>
+      <div class="timer-controls">
+        <button class="timer-btn primary" id="timer-start">Start</button>
+        <button class="timer-btn" id="timer-reset">Reset</button>
+        <button class="timer-btn" id="timer-skip">Skip</button>
+      </div>
+      <div class="timer-presets">
+        <button class="preset-btn active" data-focus="25" data-break="5">25/5</button>
+        <button class="preset-btn" data-focus="50" data-break="10">50/10</button>
+        <button class="preset-btn" data-focus="90" data-break="20">90/20</button>
       </div>
     </div>
 
