@@ -15,37 +15,39 @@
       margin: 0;
       display: flex;
       flex-direction: column;
+      justify-content: center;
     }
 
     .container {
-      max-width: 600px;
+      max-width: 480px;
       margin: 0 auto;
-      padding: 3rem 2rem;
+      padding: 2rem 1.5rem;
       width: 100%;
     }
 
     header {
       text-align: center;
-      margin-bottom: 2.5rem;
+      margin-bottom: 3rem;
     }
 
     .logo {
-      font-size: 2rem;
+      font-size: 2.5rem;
       font-weight: 200;
-      letter-spacing: 8px;
+      letter-spacing: 12px;
       text-transform: uppercase;
       background: linear-gradient(135deg, #7c9eb8 0%, #b8a9c9 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      margin: 0 0 0.5rem 0;
+      margin: 0 0 0.75rem 0;
     }
 
     .tagline {
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       color: #6b7394;
       font-weight: 300;
-      letter-spacing: 2px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
     }
 
     #loading {
@@ -67,9 +69,9 @@
     }
 
     .spinner {
-      width: 40px;
-      height: 40px;
-      border: 2px solid rgba(124, 158, 184, 0.2);
+      width: 36px;
+      height: 36px;
+      border: 2px solid rgba(124, 158, 184, 0.15);
       border-top-color: #7c9eb8;
       border-radius: 50%;
       animation: spin 1.5s linear infinite;
@@ -77,8 +79,9 @@
 
     .loading-text {
       color: #6b7394;
-      font-size: 0.85rem;
-      letter-spacing: 1px;
+      font-size: 0.8rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
     }
 
     @keyframes spin {
@@ -87,63 +90,62 @@
 
     #visualizer {
       width: 100%;
-      height: 180px;
-      background: rgba(0,0,0,0.2);
-      border-radius: 20px;
-      margin-bottom: 2rem;
+      height: 160px;
+      background: rgba(0,0,0,0.25);
+      border-radius: 24px;
+      margin-bottom: 1.5rem;
     }
 
     .player-card {
       background: rgba(255,255,255,0.03);
-      border: 1px solid rgba(255,255,255,0.05);
-      border-radius: 24px;
-      padding: 2rem;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 28px;
+      padding: 2rem 1.75rem;
       backdrop-filter: blur(20px);
     }
 
     .mood-selector {
-      width: 100%;
-      margin-bottom: 2rem;
+      margin-bottom: 2.5rem;
     }
 
     .mood-selector select {
       width: 100%;
-      background: rgba(124, 158, 184, 0.1);
+      background: rgba(124, 158, 184, 0.08);
       color: #e0e4ef;
-      border: 1px solid rgba(124, 158, 184, 0.2);
-      padding: 1rem 1.5rem;
-      font-size: 1rem;
-      border-radius: 14px;
+      border: 1px solid rgba(124, 158, 184, 0.15);
+      padding: 1.1rem 1.5rem;
+      font-size: 0.95rem;
+      border-radius: 16px;
       cursor: pointer;
       appearance: none;
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%237c9eb8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
       background-repeat: no-repeat;
-      background-position: right 1rem center;
+      background-position: right 1.25rem center;
       transition: all 0.3s ease;
     }
 
     .mood-selector select:hover {
-      background-color: rgba(124, 158, 184, 0.15);
-      border-color: rgba(124, 158, 184, 0.3);
+      background-color: rgba(124, 158, 184, 0.12);
+      border-color: rgba(124, 158, 184, 0.25);
     }
 
     .mood-selector select:focus {
       outline: none;
       border-color: #7c9eb8;
-      box-shadow: 0 0 0 3px rgba(124, 158, 184, 0.1);
+      box-shadow: 0 0 0 4px rgba(124, 158, 184, 0.1);
     }
 
     .controls {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 1.5rem;
-      margin-bottom: 2rem;
+      gap: 2rem;
+      margin-bottom: 2.5rem;
     }
 
     .play-btn {
-      width: 72px;
-      height: 72px;
+      width: 80px;
+      height: 80px;
       border-radius: 50%;
       border: none;
       background: linear-gradient(135deg, #7c9eb8 0%, #9b8ec2 100%);
@@ -152,23 +154,23 @@
       align-items: center;
       justify-content: center;
       transition: all 0.3s ease;
-      box-shadow: 0 8px 32px rgba(124, 158, 184, 0.25);
+      box-shadow: 0 8px 32px rgba(124, 158, 184, 0.3);
     }
 
     .play-btn:hover {
-      transform: scale(1.05);
-      box-shadow: 0 12px 40px rgba(124, 158, 184, 0.35);
+      transform: scale(1.06);
+      box-shadow: 0 12px 44px rgba(124, 158, 184, 0.4);
     }
 
     .play-btn:active {
-      transform: scale(0.98);
+      transform: scale(0.97);
     }
 
     .play-btn svg {
-      width: 28px;
-      height: 28px;
+      width: 30px;
+      height: 30px;
       fill: #1a1c2e;
-      margin-left: 3px;
+      margin-left: 4px;
     }
 
     .play-btn.playing svg {
@@ -176,8 +178,8 @@
     }
 
     .skip-btn {
-      width: 44px;
-      height: 44px;
+      width: 48px;
+      height: 48px;
       border-radius: 50%;
       border: 1px solid rgba(124, 158, 184, 0.2);
       background: transparent;
@@ -199,38 +201,52 @@
       fill: #7c9eb8;
     }
 
+    .volume-section {
+      padding: 0 0.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .volume-label {
+      font-size: 0.65rem;
+      color: #5a6384;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 0.75rem;
+      display: block;
+    }
+
     .volume-control {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
-      padding: 0 0.5rem;
-      margin-bottom: 1.5rem;
+      gap: 1rem;
     }
 
     .volume-control svg {
-      width: 18px;
-      height: 18px;
-      fill: #6b7394;
+      width: 16px;
+      height: 16px;
+      fill: #5a6384;
       flex-shrink: 0;
     }
 
     .volume-slider {
       flex: 1;
       -webkit-appearance: none;
-      height: 3px;
+      appearance: none;
+      height: 4px;
       border-radius: 2px;
-      background: rgba(124, 158, 184, 0.2);
+      background: rgba(124, 158, 184, 0.15);
       cursor: pointer;
     }
 
     .volume-slider::-webkit-slider-thumb {
       -webkit-appearance: none;
-      width: 14px;
-      height: 14px;
+      width: 16px;
+      height: 16px;
       border-radius: 50%;
       background: #7c9eb8;
       cursor: pointer;
       transition: transform 0.2s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     }
 
     .volume-slider::-webkit-slider-thumb:hover {
@@ -241,55 +257,69 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 0.8rem;
-      color: #6b7394;
-      padding: 0 0.25rem;
+      padding: 1.25rem 1rem;
+      background: rgba(0,0,0,0.15);
+      border-radius: 14px;
     }
 
     .mood-name {
+      font-size: 0.85rem;
       font-weight: 500;
       color: #9ba4c0;
     }
 
     .bpm {
+      font-size: 0.75rem;
       color: #7c9eb8;
-      font-weight: 500;
+      font-weight: 600;
+      letter-spacing: 0.5px;
     }
 
     .keyboard-hint {
       text-align: center;
-      font-size: 0.7rem;
-      color: #4a5168;
-      margin-top: 2rem;
+      font-size: 0.75rem;
+      color: #6b7394;
+      margin-top: 2.5rem;
+      letter-spacing: 0.5px;
     }
 
     kbd {
-      background: rgba(255,255,255,0.05);
-      padding: 0.2rem 0.5rem;
-      border-radius: 4px;
+      background: rgba(124, 158, 184, 0.15);
+      padding: 0.3rem 0.6rem;
+      border-radius: 6px;
       font-family: inherit;
-      margin: 0 0.1rem;
+      margin: 0 0.15rem;
+      font-size: 0.7rem;
+      color: #9ba4c0;
     }
 
     .footer {
       text-align: center;
-      margin-top: 3rem;
+      margin-top: 2rem;
       font-size: 0.7rem;
-      color: #4a5168;
+      color: #6b7394;
+      letter-spacing: 1px;
     }
 
-    @media (max-width: 600px) {
-      .container { padding: 2rem 1.5rem; }
-      .logo { font-size: 1.6rem; }
-      .play-btn { width: 64px; height: 64px; }
-      .skip-btn { width: 40px; height: 40px; }
+    @media (max-width: 500px) {
+      .container { padding: 1.5rem 1.25rem; }
+      .logo { font-size: 2rem; letter-spacing: 8px; }
+      .player-card { padding: 1.5rem 1.25rem; }
+      .play-btn { width: 70px; height: 70px; }
+      .skip-btn { width: 44px; height: 44px; }
+      .controls { gap: 1.5rem; }
+    }
+
+    @media (min-height: 800px) {
+      .container { padding: 3rem 1.5rem; }
+      header { margin-bottom: 4rem; }
     }
   </style>
 </head>
 <body>
   <div id="loading">
     <div class="spinner"></div>
-    <div class="loading-text">Preparing your space...</div>
+    <div class="loading-text">Preparing your space</div>
   </div>
 
   <div class="container">
@@ -355,10 +385,13 @@
         </button>
       </div>
 
-      <div class="volume-control">
-        <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
-        <input type="range" class="volume-slider" id="volume" min="0" max="100" value="70">
-        <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+      <div class="volume-section">
+        <span class="volume-label">Volume</span>
+        <div class="volume-control">
+          <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3z"/></svg>
+          <input type="range" class="volume-slider" id="volume" min="0" max="100" value="70">
+          <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+        </div>
       </div>
 
       <div class="info-bar">
@@ -369,11 +402,11 @@
 
     <div class="keyboard-hint">
       <kbd>Space</kbd> Play/Pause
-      <kbd>&#8592;</kbd> <kbd>&#8594;</kbd> Switch moods
+      <kbd>←</kbd> <kbd>→</kbd> Switch moods
     </div>
 
     <div class="footer">
-      Generative ambient music for work & relaxation
+      Generative ambient sounds for focus & relaxation
     </div>
   </div>
 
