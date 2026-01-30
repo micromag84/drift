@@ -213,6 +213,8 @@ function initVisualizer() {
   dataArray = new Uint8Array(analyser.frequencyBinCount);
   analyser.connect(masterGain);
 
+  // Monkey-patch AudioNode.connect to route all audio through our analyser for visualization.
+  // This intercepts connections to the destination and redirects them through analyser → masterGain → destination.
   const dest = audioCtx.destination;
   const originalConnect = AudioNode.prototype.connect;
   AudioNode.prototype.connect = function(target, ...args) {
@@ -740,7 +742,13 @@ function saveTasks() {
 
 function updateTasksCount() {
   const remaining = tasks.filter(t => !t.done).length;
-  tasksCount.textContent = remaining > 0 ? `${remaining} left` : '';
+  if (remaining > 0) {
+    tasksCount.textContent = `${remaining} left`;
+  } else if (tasks.length > 0) {
+    tasksCount.textContent = 'All done!';
+  } else {
+    tasksCount.textContent = '';
+  }
 }
 
 function escapeHtml(text) {
