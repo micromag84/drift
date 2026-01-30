@@ -710,6 +710,73 @@ soundRows.forEach(row => {
   });
 });
 
+// Quick Tasks
+const taskInput = document.getElementById('task-input');
+const taskList = document.getElementById('task-list');
+const tasksCount = document.getElementById('tasks-count');
+
+let tasks = JSON.parse(localStorage.getItem('drift-tasks') || '[]');
+
+function saveTasks() {
+  localStorage.setItem('drift-tasks', JSON.stringify(tasks));
+}
+
+function updateTasksCount() {
+  const remaining = tasks.filter(t => !t.done).length;
+  tasksCount.textContent = remaining > 0 ? `${remaining} left` : '';
+}
+
+function renderTasks() {
+  taskList.innerHTML = tasks.map((task, i) => `
+    <li class="task-item ${task.done ? 'done' : ''}" data-index="${i}">
+      <span class="task-check"></span>
+      <span class="task-text">${task.text}</span>
+      <span class="task-delete">×</span>
+    </li>
+  `).join('');
+  updateTasksCount();
+}
+
+function addTask(text) {
+  if (!text.trim()) return;
+  tasks.unshift({ text: text.trim(), done: false });
+  saveTasks();
+  renderTasks();
+}
+
+function toggleTask(index) {
+  tasks[index].done = !tasks[index].done;
+  saveTasks();
+  renderTasks();
+}
+
+function deleteTask(index) {
+  tasks.splice(index, 1);
+  saveTasks();
+  renderTasks();
+}
+
+taskInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    addTask(taskInput.value);
+    taskInput.value = '';
+  }
+});
+
+taskList.addEventListener('click', (e) => {
+  const item = e.target.closest('.task-item');
+  if (!item) return;
+  const index = parseInt(item.dataset.index);
+
+  if (e.target.classList.contains('task-delete')) {
+    deleteTask(index);
+  } else {
+    toggleTask(index);
+  }
+});
+
+renderTasks();
+
 // Request notification permission
 if ('Notification' in window && Notification.permission === 'default') {
   Notification.requestPermission();

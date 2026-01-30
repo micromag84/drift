@@ -439,6 +439,136 @@
       color: #7c9eb8;
     }
 
+    .tasks-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 20px;
+      padding: 1.5rem;
+      margin-top: 1.5rem;
+    }
+
+    .tasks-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .tasks-title {
+      font-size: 0.7rem;
+      color: #6b7394;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+    }
+
+    .tasks-count {
+      font-size: 0.65rem;
+      color: #5a6384;
+    }
+
+    .task-input {
+      width: 100%;
+      background: rgba(0,0,0,0.2);
+      border: 1px solid rgba(124, 158, 184, 0.1);
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      color: #e0e4ef;
+      font-size: 0.85rem;
+      margin-bottom: 0.75rem;
+      transition: border-color 0.2s ease;
+    }
+
+    .task-input::placeholder {
+      color: #5a6384;
+    }
+
+    .task-input:focus {
+      outline: none;
+      border-color: rgba(124, 158, 184, 0.3);
+    }
+
+    .task-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      cursor: pointer;
+      transition: opacity 0.2s ease;
+    }
+
+    .task-item:last-child {
+      border-bottom: none;
+    }
+
+    .task-item:hover {
+      opacity: 0.8;
+    }
+
+    .task-check {
+      width: 16px;
+      height: 16px;
+      border: 1.5px solid #5a6384;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .task-item.done .task-check {
+      background: #7c9eb8;
+      border-color: #7c9eb8;
+    }
+
+    .task-item.done .task-check::after {
+      content: '✓';
+      font-size: 0.6rem;
+      color: #1a1c2e;
+    }
+
+    .task-text {
+      flex: 1;
+      font-size: 0.85rem;
+      color: #9ba4c0;
+      transition: all 0.2s ease;
+    }
+
+    .task-item.done .task-text {
+      text-decoration: line-through;
+      opacity: 0.5;
+    }
+
+    .task-delete {
+      opacity: 0;
+      color: #5a6384;
+      font-size: 1rem;
+      padding: 0 0.25rem;
+      transition: opacity 0.2s ease;
+    }
+
+    .task-item:hover .task-delete {
+      opacity: 1;
+    }
+
+    .task-delete:hover {
+      color: #e57373;
+    }
+
+    .tasks-empty {
+      text-align: center;
+      color: #5a6384;
+      font-size: 0.8rem;
+      padding: 1rem 0;
+    }
+
     .keyboard-hint {
       text-align: center;
       font-size: 0.75rem;
@@ -601,6 +731,15 @@
         <button class="preset-btn" data-focus="50" data-break="10">50/10</button>
         <button class="preset-btn" data-focus="90" data-break="20">90/20</button>
       </div>
+    </div>
+
+    <div class="tasks-card">
+      <div class="tasks-header">
+        <span class="tasks-title">Tasks</span>
+        <span class="tasks-count" id="tasks-count"></span>
+      </div>
+      <input type="text" class="task-input" id="task-input" placeholder="Add a task..." maxlength="50">
+      <ul class="task-list" id="task-list"></ul>
     </div>
 
     <div class="keyboard-hint">
