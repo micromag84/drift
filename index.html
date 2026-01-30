@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Strudel Player</title>
+  <title>Drift - Focus & Relaxation</title>
   <style>
     * { box-sizing: border-box; }
 
     body {
-      font-family: system-ui, -apple-system, sans-serif;
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-      color: #eee;
+      font-family: 'SF Pro Display', system-ui, -apple-system, sans-serif;
+      background: linear-gradient(150deg, #1a1c2e 0%, #2d3250 50%, #1a1c2e 100%);
+      color: #e0e4ef;
       min-height: 100vh;
       margin: 0;
       display: flex;
@@ -18,37 +18,47 @@
     }
 
     .container {
-      max-width: 900px;
+      max-width: 600px;
       margin: 0 auto;
-      padding: 2rem;
+      padding: 3rem 2rem;
       width: 100%;
     }
 
     header {
       text-align: center;
-      margin-bottom: 1rem;
+      margin-bottom: 2.5rem;
     }
 
-    h1 {
-      color: #f39c12;
-      font-size: 1.5rem;
-      margin: 0;
-      font-weight: 300;
-      letter-spacing: 4px;
+    .logo {
+      font-size: 2rem;
+      font-weight: 200;
+      letter-spacing: 8px;
       text-transform: uppercase;
+      background: linear-gradient(135deg, #7c9eb8 0%, #b8a9c9 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin: 0 0 0.5rem 0;
+    }
+
+    .tagline {
+      font-size: 0.85rem;
+      color: #6b7394;
+      font-weight: 300;
+      letter-spacing: 2px;
     }
 
     #loading {
       position: fixed;
       inset: 0;
-      background: #1a1a2e;
+      background: #1a1c2e;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-direction: column;
-      gap: 1rem;
+      gap: 1.5rem;
       z-index: 100;
-      transition: opacity 0.5s;
+      transition: opacity 0.8s ease-out;
     }
 
     #loading.hidden {
@@ -57,12 +67,18 @@
     }
 
     .spinner {
-      width: 50px;
-      height: 50px;
-      border: 3px solid #333;
-      border-top-color: #f39c12;
+      width: 40px;
+      height: 40px;
+      border: 2px solid rgba(124, 158, 184, 0.2);
+      border-top-color: #7c9eb8;
       border-radius: 50%;
-      animation: spin 1s linear infinite;
+      animation: spin 1.5s linear infinite;
+    }
+
+    .loading-text {
+      color: #6b7394;
+      font-size: 0.85rem;
+      letter-spacing: 1px;
     }
 
     @keyframes spin {
@@ -71,85 +87,88 @@
 
     #visualizer {
       width: 100%;
-      height: 200px;
-      background: rgba(0,0,0,0.3);
-      border-radius: 16px;
-      margin-bottom: 1.5rem;
+      height: 180px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 20px;
+      margin-bottom: 2rem;
     }
 
     .player-card {
-      background: rgba(255,255,255,0.05);
-      border-radius: 16px;
-      padding: 1.5rem;
-      backdrop-filter: blur(10px);
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 24px;
+      padding: 2rem;
+      backdrop-filter: blur(20px);
     }
 
-    .track-selector {
+    .mood-selector {
       width: 100%;
-      margin-bottom: 1.5rem;
+      margin-bottom: 2rem;
     }
 
-    .track-selector select {
+    .mood-selector select {
       width: 100%;
-      background: rgba(0,0,0,0.3);
-      color: #fff;
-      border: none;
+      background: rgba(124, 158, 184, 0.1);
+      color: #e0e4ef;
+      border: 1px solid rgba(124, 158, 184, 0.2);
       padding: 1rem 1.5rem;
-      font-size: 1.1rem;
-      border-radius: 12px;
+      font-size: 1rem;
+      border-radius: 14px;
       cursor: pointer;
       appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23f39c12' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%237c9eb8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
       background-repeat: no-repeat;
       background-position: right 1rem center;
-      transition: all 0.2s;
+      transition: all 0.3s ease;
     }
 
-    .track-selector select:hover {
-      background-color: rgba(243, 156, 18, 0.1);
+    .mood-selector select:hover {
+      background-color: rgba(124, 158, 184, 0.15);
+      border-color: rgba(124, 158, 184, 0.3);
     }
 
-    .track-selector select:focus {
-      outline: 2px solid #f39c12;
-      outline-offset: 2px;
+    .mood-selector select:focus {
+      outline: none;
+      border-color: #7c9eb8;
+      box-shadow: 0 0 0 3px rgba(124, 158, 184, 0.1);
     }
 
     .controls {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 1rem;
-      margin-bottom: 1.5rem;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
     }
 
     .play-btn {
-      width: 80px;
-      height: 80px;
+      width: 72px;
+      height: 72px;
       border-radius: 50%;
       border: none;
-      background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+      background: linear-gradient(135deg, #7c9eb8 0%, #9b8ec2 100%);
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.2s;
-      box-shadow: 0 4px 20px rgba(243, 156, 18, 0.3);
+      transition: all 0.3s ease;
+      box-shadow: 0 8px 32px rgba(124, 158, 184, 0.25);
     }
 
     .play-btn:hover {
       transform: scale(1.05);
-      box-shadow: 0 6px 30px rgba(243, 156, 18, 0.4);
+      box-shadow: 0 12px 40px rgba(124, 158, 184, 0.35);
     }
 
     .play-btn:active {
-      transform: scale(0.95);
+      transform: scale(0.98);
     }
 
     .play-btn svg {
-      width: 32px;
-      height: 32px;
-      fill: #1a1a2e;
-      margin-left: 4px;
+      width: 28px;
+      height: 28px;
+      fill: #1a1c2e;
+      margin-left: 3px;
     }
 
     .play-btn.playing svg {
@@ -157,60 +176,61 @@
     }
 
     .skip-btn {
-      width: 50px;
-      height: 50px;
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
-      border: 2px solid rgba(255,255,255,0.2);
+      border: 1px solid rgba(124, 158, 184, 0.2);
       background: transparent;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.2s;
+      transition: all 0.3s ease;
     }
 
     .skip-btn:hover {
-      border-color: #f39c12;
-      background: rgba(243, 156, 18, 0.1);
+      border-color: #7c9eb8;
+      background: rgba(124, 158, 184, 0.1);
     }
 
     .skip-btn svg {
-      width: 20px;
-      height: 20px;
-      fill: #eee;
+      width: 18px;
+      height: 18px;
+      fill: #7c9eb8;
     }
 
     .volume-control {
       display: flex;
       align-items: center;
       gap: 0.75rem;
-      padding: 0 1rem;
+      padding: 0 0.5rem;
+      margin-bottom: 1.5rem;
     }
 
     .volume-control svg {
-      width: 20px;
-      height: 20px;
-      fill: #888;
+      width: 18px;
+      height: 18px;
+      fill: #6b7394;
       flex-shrink: 0;
     }
 
     .volume-slider {
       flex: 1;
       -webkit-appearance: none;
-      height: 4px;
+      height: 3px;
       border-radius: 2px;
-      background: rgba(255,255,255,0.2);
+      background: rgba(124, 158, 184, 0.2);
       cursor: pointer;
     }
 
     .volume-slider::-webkit-slider-thumb {
       -webkit-appearance: none;
-      width: 16px;
-      height: 16px;
+      width: 14px;
+      height: 14px;
       border-radius: 50%;
-      background: #f39c12;
+      background: #7c9eb8;
       cursor: pointer;
-      transition: transform 0.1s;
+      transition: transform 0.2s ease;
     }
 
     .volume-slider::-webkit-slider-thumb:hover {
@@ -221,156 +241,139 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 0.85rem;
-      color: #888;
-      padding: 0 0.5rem;
+      font-size: 0.8rem;
+      color: #6b7394;
+      padding: 0 0.25rem;
+    }
+
+    .mood-name {
+      font-weight: 500;
+      color: #9ba4c0;
     }
 
     .bpm {
-      color: #f39c12;
-      font-weight: 600;
-    }
-
-    .code-section {
-      margin-top: 1.5rem;
-    }
-
-    .code-toggle {
-      background: none;
-      border: none;
-      color: #888;
-      cursor: pointer;
-      font-size: 0.85rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.5rem 0;
-      transition: color 0.2s;
-    }
-
-    .code-toggle:hover {
-      color: #f39c12;
-    }
-
-    .code-toggle svg {
-      width: 16px;
-      height: 16px;
-      fill: currentColor;
-      transition: transform 0.2s;
-    }
-
-    .code-toggle.open svg {
-      transform: rotate(90deg);
-    }
-
-    .code-content {
-      max-height: 0;
-      overflow: hidden;
-      transition: max-height 0.3s ease-out;
-    }
-
-    .code-content.open {
-      max-height: 300px;
-    }
-
-    pre {
-      background: rgba(0,0,0,0.4);
-      padding: 1rem;
-      border-radius: 8px;
-      overflow-x: auto;
-      font-size: 0.8rem;
-      line-height: 1.5;
-      margin: 0.5rem 0 0 0;
+      color: #7c9eb8;
+      font-weight: 500;
     }
 
     .keyboard-hint {
       text-align: center;
-      font-size: 0.75rem;
-      color: #555;
-      margin-top: 1.5rem;
+      font-size: 0.7rem;
+      color: #4a5168;
+      margin-top: 2rem;
     }
 
     kbd {
-      background: rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.05);
       padding: 0.2rem 0.5rem;
       border-radius: 4px;
       font-family: inherit;
+      margin: 0 0.1rem;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 3rem;
+      font-size: 0.7rem;
+      color: #4a5168;
     }
 
     @media (max-width: 600px) {
-      .container { padding: 1rem; }
-      h1 { font-size: 1.2rem; }
-      .play-btn { width: 70px; height: 70px; }
-      .skip-btn { width: 44px; height: 44px; }
+      .container { padding: 2rem 1.5rem; }
+      .logo { font-size: 1.6rem; }
+      .play-btn { width: 64px; height: 64px; }
+      .skip-btn { width: 40px; height: 40px; }
     }
   </style>
 </head>
 <body>
   <div id="loading">
     <div class="spinner"></div>
-    <div>Loading samples...</div>
+    <div class="loading-text">Preparing your space...</div>
   </div>
 
   <div class="container">
     <header>
-      <h1>Strudel Player</h1>
+      <h1 class="logo">Drift</h1>
+      <p class="tagline">Focus & Relaxation</p>
     </header>
 
     <canvas id="visualizer"></canvas>
 
     <div class="player-card">
-      <div class="track-selector">
+      <div class="mood-selector">
         <select id="track-select">
-          <option value="daftpunk">Daft Punk - Around The World</option>
-          <option value="bluemonday">New Order - Blue Monday</option>
-          <option value="sandstorm">Darude - Sandstorm</option>
-          <option value="technologic">Daft Punk - Technologic</option>
-          <option value="insomnia">Faithless - Insomnia</option>
-          <option value="children">Robert Miles - Children</option>
-          <option value="kernkraft">Zombie Nation - Kernkraft 400</option>
-          <option value="professional">deadmau5 - Professional Griefers</option>
-          <option value="levels">Avicii - Levels</option>
-          <option value="scary">Skrillex - Scary Monsters</option>
+          <optgroup label="Focus">
+            <option value="deepfocus">Deep Focus</option>
+            <option value="flow">Flow State</option>
+            <option value="minimal">Minimal</option>
+            <option value="study">Study Session</option>
+          </optgroup>
+          <optgroup label="Chill">
+            <option value="lofi">Lo-Fi Dreams</option>
+            <option value="coffee">Coffee Shop</option>
+            <option value="jazz">Late Night Jazz</option>
+            <option value="vinyl">Vinyl Crackle</option>
+          </optgroup>
+          <optgroup label="Nature">
+            <option value="rain">Rainy Day</option>
+            <option value="ocean">Ocean Waves</option>
+            <option value="forest">Forest Morning</option>
+            <option value="thunder">Distant Thunder</option>
+          </optgroup>
+          <optgroup label="Ambient">
+            <option value="ambient">Ambient Space</option>
+            <option value="drone">Deep Drone</option>
+            <option value="ethereal">Ethereal Pads</option>
+            <option value="cosmos">Cosmic Drift</option>
+          </optgroup>
+          <optgroup label="Wellness">
+            <option value="meditation">Meditation</option>
+            <option value="breathing">Breathing</option>
+            <option value="sleep">Sleep</option>
+            <option value="healing">Healing Tones</option>
+          </optgroup>
+          <optgroup label="Moody">
+            <option value="night">Late Night</option>
+            <option value="melancholy">Melancholy</option>
+            <option value="noir">Film Noir</option>
+            <option value="mystery">Mystery</option>
+          </optgroup>
         </select>
       </div>
 
       <div class="controls">
-        <button class="skip-btn" id="prev" title="Previous track">
+        <button class="skip-btn" id="prev" title="Previous">
           <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
         </button>
         <button class="play-btn" id="play" title="Play/Pause">
           <svg id="play-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
           <svg id="pause-icon" viewBox="0 0 24 24" style="display:none"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
         </button>
-        <button class="skip-btn" id="next" title="Next track">
+        <button class="skip-btn" id="next" title="Next">
           <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
         </button>
       </div>
 
       <div class="volume-control">
         <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
-        <input type="range" class="volume-slider" id="volume" min="0" max="100" value="80">
+        <input type="range" class="volume-slider" id="volume" min="0" max="100" value="70">
         <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
       </div>
 
       <div class="info-bar">
-        <span id="track-info">Select a track</span>
-        <span class="bpm" id="bpm">120 BPM</span>
-      </div>
-
-      <div class="code-section">
-        <button class="code-toggle" id="code-toggle">
-          <svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
-          Show pattern code
-        </button>
-        <div class="code-content" id="code-content">
-          <pre id="pattern-display"></pre>
-        </div>
+        <span class="mood-name" id="track-info">Deep Focus</span>
+        <span class="bpm" id="bpm">70 BPM</span>
       </div>
     </div>
 
     <div class="keyboard-hint">
-      <kbd>Space</kbd> Play/Pause &nbsp; <kbd>←</kbd> <kbd>→</kbd> Switch tracks
+      <kbd>Space</kbd> Play/Pause
+      <kbd>&#8592;</kbd> <kbd>&#8594;</kbd> Switch moods
+    </div>
+
+    <div class="footer">
+      Generative ambient music for work & relaxation
     </div>
   </div>
 
