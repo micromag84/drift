@@ -167,7 +167,6 @@ const pauseIcon = document.getElementById('pause-icon');
 const prevBtn = document.getElementById('prev');
 const nextBtn = document.getElementById('next');
 const volumeSlider = document.getElementById('volume');
-const trackInfo = document.getElementById('track-info');
 const bpmDisplay = document.getElementById('bpm');
 const canvas = document.getElementById('visualizer');
 const ctx = canvas.getContext('2d');
@@ -322,8 +321,6 @@ function getSelectedTrack() {
 
 function updateUI() {
   const track = getSelectedTrack();
-  const selectedOption = trackSelect.options[trackSelect.selectedIndex];
-  trackInfo.textContent = selectedOption.text;
   bpmDisplay.textContent = `${track.bpm} BPM`;
 }
 

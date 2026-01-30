@@ -106,6 +106,17 @@
 
     .mood-selector {
       margin-bottom: 2.5rem;
+      position: relative;
+    }
+
+    .mood-selector .bpm {
+      position: absolute;
+      top: -1.5rem;
+      right: 0;
+      font-size: 0.7rem;
+      color: #5a6384;
+      font-weight: 500;
+      letter-spacing: 0.5px;
     }
 
     .mood-selector select {
@@ -251,28 +262,6 @@
 
     .volume-slider::-webkit-slider-thumb:hover {
       transform: scale(1.2);
-    }
-
-    .info-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 1.25rem 1rem;
-      background: rgba(0,0,0,0.15);
-      border-radius: 14px;
-    }
-
-    .mood-name {
-      font-size: 0.85rem;
-      font-weight: 500;
-      color: #9ba4c0;
-    }
-
-    .bpm {
-      font-size: 0.75rem;
-      color: #7c9eb8;
-      font-weight: 600;
-      letter-spacing: 0.5px;
     }
 
     .ambience-section {
@@ -507,6 +496,7 @@
 
     <div class="player-card">
       <div class="mood-selector">
+        <span class="bpm" id="bpm">70 BPM</span>
         <select id="track-select">
           <optgroup label="Focus">
             <option value="deepfocus">Deep Focus</option>
@@ -591,10 +581,6 @@
         </div>
       </div>
 
-      <div class="info-bar">
-        <span class="mood-name" id="track-info">Deep Focus</span>
-        <span class="bpm" id="bpm">70 BPM</span>
-      </div>
     </div>
 
     <div class="timer-card">
