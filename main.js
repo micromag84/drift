@@ -177,24 +177,36 @@ let isPlaying = false;
 let analyser, dataArray, animationId;
 let time = 0;
 let volume = 0.7;
+let masterGain = null;
 
 // Initialize Strudel
 await initStrudel();
 loadingEl.classList.add('hidden');
 
+// Setup master volume control
+function setupMasterGain() {
+  const audioCtx = globalThis.getAudioContext();
+  masterGain = audioCtx.createGain();
+  masterGain.gain.value = volume;
+  masterGain.connect(audioCtx.destination);
+}
+
 // Visualizer setup
 function initVisualizer() {
   const audioCtx = globalThis.getAudioContext();
+
+  if (!masterGain) setupMasterGain();
+
   analyser = audioCtx.createAnalyser();
   analyser.fftSize = 256;
   analyser.smoothingTimeConstant = 0.85;
   dataArray = new Uint8Array(analyser.frequencyBinCount);
-  analyser.connect(audioCtx.destination);
+  analyser.connect(masterGain);
 
   const dest = audioCtx.destination;
   const originalConnect = AudioNode.prototype.connect;
   AudioNode.prototype.connect = function(target, ...args) {
-    if (target === dest && this !== analyser) {
+    if (target === dest && this !== analyser && this !== masterGain) {
       return originalConnect.call(this, analyser, ...args);
     }
     return originalConnect.call(this, target, ...args);
@@ -325,7 +337,7 @@ function setPlaying(playing) {
 function play() {
   if (!analyser) initVisualizer();
   const track = getSelectedTrack();
-  evaluate(`${track.pattern}.gain(${volume})`);
+  evaluate(track.pattern);
   setPlaying(true);
   if (!animationId) draw();
 }
@@ -371,7 +383,9 @@ trackSelect.addEventListener('change', () => {
 
 volumeSlider.addEventListener('input', (e) => {
   volume = e.target.value / 100;
-  if (isPlaying) play();
+  if (masterGain) {
+    masterGain.gain.value = volume;
+  }
 });
 
 // Keyboard shortcuts
