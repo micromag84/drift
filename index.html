@@ -25,7 +25,17 @@
       margin: 0.5rem;
     }
     button:hover { background: #e67e22; }
-    #controls { margin: 2rem 0; }
+    #controls { margin: 2rem 0; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+    select {
+      background: #0d0d1a;
+      color: #eee;
+      border: 2px solid #f39c12;
+      padding: 1rem;
+      font-size: 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    select:focus { outline: none; border-color: #e67e22; }
     pre {
       background: #0d0d1a;
       padding: 1rem;
@@ -45,6 +55,18 @@
   <h1>Strudel Live Coding</h1>
 
   <div id="controls">
+    <select id="track-select">
+      <option value="daftpunk">Daft Punk - Around The World</option>
+      <option value="bluemonday">New Order - Blue Monday</option>
+      <option value="sandstorm">Darude - Sandstorm</option>
+      <option value="technologic">Daft Punk - Technologic</option>
+      <option value="insomnia">Faithless - Insomnia</option>
+      <option value="children">Robert Miles - Children</option>
+      <option value="kernkraft">Zombie Nation - Kernkraft 400</option>
+      <option value="professional">deadmau5 - Professional Griefers</option>
+      <option value="levels">Avicii - Levels</option>
+      <option value="scary">Skrillex - Scary Monsters</option>
+    </select>
     <button id="play">Play</button>
     <button id="stop">Stop</button>
   </div>
