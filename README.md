@@ -7,7 +7,9 @@ A calm focus & relaxation web app with generative ambient music, audio visualiza
 - **24 Mood Presets** - Focus, Chill, Nature, Ambient, Wellness, and Moody categories
 - **Generative Music** - Infinite ambient soundscapes powered by Strudel live coding
 - **Audio Visualizer** - Flowing waves and particles that react to the music
-- **Pomodoro Timer** - Built-in focus timer with 25/5, 50/10, and 90/20 presets
+- **Nature Sounds Mixer** - Layer rain, wind, thunder, and fire ambience
+- **Pomodoro Timer** - Focus timer with 25/5, 50/10, and 90/20 presets
+- **Quick Tasks** - Simple task list with localStorage persistence
 - **Keyboard Controls** - Space to play/pause, arrows to switch moods and adjust volume
 
 ## Getting Started
