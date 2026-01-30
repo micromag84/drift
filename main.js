@@ -416,12 +416,12 @@ document.addEventListener('keydown', (e) => {
       break;
     case 'ArrowUp':
       e.preventDefault();
-      volumeSlider.value = Math.min(100, parseInt(volumeSlider.value) + 10);
+      volumeSlider.value = Math.min(100, parseInt(volumeSlider.value, 10) + 10);
       volumeSlider.dispatchEvent(new Event('input'));
       break;
     case 'ArrowDown':
       e.preventDefault();
-      volumeSlider.value = Math.max(0, parseInt(volumeSlider.value) - 10);
+      volumeSlider.value = Math.max(0, parseInt(volumeSlider.value, 10) - 10);
       volumeSlider.dispatchEvent(new Event('input'));
       break;
   }
@@ -554,8 +554,8 @@ presetBtns.forEach(btn => {
     presetBtns.forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
 
-    focusDuration = parseInt(btn.dataset.focus);
-    breakDuration = parseInt(btn.dataset.break);
+    focusDuration = parseInt(btn.dataset.focus, 10);
+    breakDuration = parseInt(btn.dataset.break, 10);
 
     resetTimer();
     setTimerMode('focus');
@@ -789,7 +789,7 @@ taskInput.addEventListener('keydown', (e) => {
 taskList.addEventListener('click', (e) => {
   const item = e.target.closest('.task-item');
   if (!item) return;
-  const index = parseInt(item.dataset.index);
+  const index = parseInt(item.dataset.index, 10);
 
   if (e.target.classList.contains('task-delete')) {
     deleteTask(index);
