@@ -548,6 +548,171 @@ presetBtns.forEach(btn => {
   });
 });
 
+// Nature Sounds Mixer
+const soundRows = document.querySelectorAll('.sound-row');
+
+let audioCtxInitialized = false;
+const natureSounds = {};
+
+// White noise buffer generator
+function createNoiseBuffer(audioCtx, duration = 2) {
+  const bufferSize = audioCtx.sampleRate * duration;
+  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) {
+    data[i] = Math.random() * 2 - 1;
+  }
+  return buffer;
+}
+
+// Brown noise buffer (low frequency noise)
+function createBrownNoiseBuffer(audioCtx, duration = 2) {
+  const bufferSize = audioCtx.sampleRate * duration;
+  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  let lastOut = 0;
+  for (let i = 0; i < bufferSize; i++) {
+    const white = Math.random() * 2 - 1;
+    data[i] = (lastOut + (0.02 * white)) / 1.02;
+    lastOut = data[i];
+    data[i] *= 3.5; // Normalize
+  }
+  return buffer;
+}
+
+function initNatureSounds() {
+  if (audioCtxInitialized) return;
+
+  const audioCtx = globalThis.getAudioContext();
+  if (!audioCtx) return;
+
+  if (!masterGain) setupMasterGain();
+
+  const noiseBuffer = createNoiseBuffer(audioCtx);
+  const brownBuffer = createBrownNoiseBuffer(audioCtx);
+
+  // Rain - filtered white noise with gentle modulation
+  const rainSource = audioCtx.createBufferSource();
+  rainSource.buffer = noiseBuffer;
+  rainSource.loop = true;
+  const rainFilter = audioCtx.createBiquadFilter();
+  rainFilter.type = 'bandpass';
+  rainFilter.frequency.value = 3000;
+  rainFilter.Q.value = 0.5;
+  const rainGain = audioCtx.createGain();
+  rainGain.gain.value = 0;
+  rainSource.connect(rainFilter);
+  rainFilter.connect(rainGain);
+  rainGain.connect(masterGain);
+  rainSource.start();
+  natureSounds.rain = { gain: rainGain, source: rainSource };
+
+  // Wind - brown noise with slow modulation
+  const windSource = audioCtx.createBufferSource();
+  windSource.buffer = brownBuffer;
+  windSource.loop = true;
+  const windFilter = audioCtx.createBiquadFilter();
+  windFilter.type = 'lowpass';
+  windFilter.frequency.value = 400;
+  const windGain = audioCtx.createGain();
+  windGain.gain.value = 0;
+  // Add subtle modulation
+  const windLFO = audioCtx.createOscillator();
+  const windLFOGain = audioCtx.createGain();
+  windLFO.frequency.value = 0.2;
+  windLFOGain.gain.value = 100;
+  windLFO.connect(windLFOGain);
+  windLFOGain.connect(windFilter.frequency);
+  windLFO.start();
+  windSource.connect(windFilter);
+  windFilter.connect(windGain);
+  windGain.connect(masterGain);
+  windSource.start();
+  natureSounds.wind = { gain: windGain, source: windSource, lfo: windLFO };
+
+  // Thunder - low rumble
+  const thunderSource = audioCtx.createBufferSource();
+  thunderSource.buffer = brownBuffer;
+  thunderSource.loop = true;
+  const thunderFilter = audioCtx.createBiquadFilter();
+  thunderFilter.type = 'lowpass';
+  thunderFilter.frequency.value = 100;
+  const thunderGain = audioCtx.createGain();
+  thunderGain.gain.value = 0;
+  thunderSource.connect(thunderFilter);
+  thunderFilter.connect(thunderGain);
+  thunderGain.connect(masterGain);
+  thunderSource.start();
+  natureSounds.thunder = { gain: thunderGain, source: thunderSource };
+
+  // Fire - crackling noise
+  const fireSource = audioCtx.createBufferSource();
+  fireSource.buffer = noiseBuffer;
+  fireSource.loop = true;
+  const fireFilter = audioCtx.createBiquadFilter();
+  fireFilter.type = 'highpass';
+  fireFilter.frequency.value = 1000;
+  const fireFilter2 = audioCtx.createBiquadFilter();
+  fireFilter2.type = 'lowpass';
+  fireFilter2.frequency.value = 4000;
+  const fireGain = audioCtx.createGain();
+  fireGain.gain.value = 0;
+  // Crackling modulation
+  const fireLFO = audioCtx.createOscillator();
+  fireLFO.type = 'square';
+  fireLFO.frequency.value = 8;
+  const fireLFOGain = audioCtx.createGain();
+  fireLFOGain.gain.value = 0.5;
+  fireLFO.connect(fireLFOGain);
+  const fireModGain = audioCtx.createGain();
+  fireModGain.gain.value = 0;
+  fireLFOGain.connect(fireModGain.gain);
+  fireSource.connect(fireFilter);
+  fireFilter.connect(fireFilter2);
+  fireFilter2.connect(fireModGain);
+  fireModGain.connect(fireGain);
+  fireGain.connect(masterGain);
+  fireSource.start();
+  fireLFO.start();
+  natureSounds.fire = { gain: fireGain, modGain: fireModGain, source: fireSource, lfo: fireLFO };
+
+  audioCtxInitialized = true;
+}
+
+function setNatureSoundVolume(sound, value) {
+  initNatureSounds();
+
+  const normalizedValue = value / 100;
+  const soundObj = natureSounds[sound];
+
+  if (soundObj) {
+    const targetGain = normalizedValue * 0.4; // Max volume cap
+    soundObj.gain.gain.setTargetAtTime(targetGain, globalThis.getAudioContext().currentTime, 0.1);
+
+    // Special handling for fire crackling intensity
+    if (sound === 'fire' && soundObj.modGain) {
+      soundObj.modGain.gain.setTargetAtTime(targetGain, globalThis.getAudioContext().currentTime, 0.1);
+    }
+  }
+}
+
+// Sound slider handlers
+soundRows.forEach(row => {
+  const slider = row.querySelector('.sound-slider');
+  const soundType = row.dataset.sound;
+
+  slider.addEventListener('input', (e) => {
+    const value = parseInt(e.target.value);
+    setNatureSoundVolume(soundType, value);
+
+    if (value > 0) {
+      row.classList.add('active');
+    } else {
+      row.classList.remove('active');
+    }
+  });
+});
+
 // Request notification permission
 if ('Notification' in window && Notification.permission === 'default') {
   Notification.requestPermission();

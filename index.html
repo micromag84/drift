@@ -275,6 +275,63 @@
       letter-spacing: 0.5px;
     }
 
+    .ambience-section {
+      padding: 0 0.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .ambience-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem 1.5rem;
+    }
+
+    .sound-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .sound-icon {
+      font-size: 0.9rem;
+      opacity: 0.4;
+      transition: opacity 0.2s ease;
+      width: 20px;
+      text-align: center;
+    }
+
+    .sound-row.active .sound-icon {
+      opacity: 1;
+    }
+
+    .sound-slider {
+      flex: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(124, 158, 184, 0.15);
+      cursor: pointer;
+    }
+
+    .sound-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #5a6384;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .sound-row.active .sound-slider::-webkit-slider-thumb {
+      background: #7c9eb8;
+    }
+
+    .sound-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+
     .timer-card {
       background: rgba(255,255,255,0.03);
       border: 1px solid rgba(255,255,255,0.06);
@@ -509,6 +566,28 @@
           <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3z"/></svg>
           <input type="range" class="volume-slider" id="volume" min="0" max="100" value="70">
           <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+        </div>
+      </div>
+
+      <div class="ambience-section">
+        <span class="volume-label">Ambience</span>
+        <div class="ambience-grid">
+          <div class="sound-row" data-sound="rain">
+            <span class="sound-icon">🌧</span>
+            <input type="range" class="sound-slider" min="0" max="100" value="0">
+          </div>
+          <div class="sound-row" data-sound="wind">
+            <span class="sound-icon">💨</span>
+            <input type="range" class="sound-slider" min="0" max="100" value="0">
+          </div>
+          <div class="sound-row" data-sound="thunder">
+            <span class="sound-icon">⛈</span>
+            <input type="range" class="sound-slider" min="0" max="100" value="0">
+          </div>
+          <div class="sound-row" data-sound="fire">
+            <span class="sound-icon">🔥</span>
+            <input type="range" class="sound-slider" min="0" max="100" value="0">
+          </div>
         </div>
       </div>
 
