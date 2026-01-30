@@ -177,16 +177,21 @@ let analyser, dataArray, animationId;
 let time = 0;
 let volume = 0.7;
 let masterGain = null;
+let strudelReady = false;
 
 // Initialize Strudel
 try {
   await initStrudel();
+  strudelReady = true;
+  loadingEl.classList.add('hidden');
 } catch (err) {
   console.error('Failed to initialize Strudel:', err);
-  loadingEl.querySelector('.loading-text').textContent = 'Failed to load audio engine';
+  loadingEl.querySelector('.loading-text').textContent = 'Failed to load audio engine. Please refresh.';
   loadingEl.querySelector('.spinner').style.display = 'none';
+  playBtn.disabled = true;
+  playBtn.style.opacity = '0.5';
+  playBtn.style.cursor = 'not-allowed';
 }
-loadingEl.classList.add('hidden');
 
 // Setup master volume control
 function setupMasterGain() {
@@ -338,6 +343,7 @@ function setPlaying(playing) {
 }
 
 function play() {
+  if (!strudelReady) return;
   if (!analyser) initVisualizer();
   const track = getSelectedTrack();
   evaluate(track.pattern);
@@ -465,6 +471,11 @@ function startTimer() {
     // Start
     timerRunning = true;
     timerStartBtn.textContent = 'Pause';
+
+    // Request notification permission on first timer start
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
 
     // Auto-play music when starting focus timer
     if (timerMode === 'focus' && !isPlaying) {
@@ -789,7 +800,3 @@ taskList.addEventListener('click', (e) => {
 
 renderTasks();
 
-// Request notification permission
-if ('Notification' in window && Notification.permission === 'default') {
-  Notification.requestPermission();
-}
