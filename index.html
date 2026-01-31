@@ -748,6 +748,7 @@
       font-size: 0.65rem;
       cursor: pointer;
       transition: all 0.2s ease;
+      white-space: nowrap;
     }
 
     .breathing-preset-btn:hover {
@@ -824,6 +825,7 @@
       .timer-time { font-size: 2.5rem; letter-spacing: 2px; }
       .ambience-grid { gap: 0.75rem 1rem; }
       .footer { letter-spacing: 0.5px; }
+      .breathing-settings { gap: 1.5rem; }
     }
 
     @media (max-width: 360px) {
@@ -835,6 +837,9 @@
       .mode-card { padding: 1.25rem 1rem; }
       .timer-time { font-size: 2.25rem; }
       .ambience-grid { gap: 0.5rem 0.75rem; }
+      .breathing-settings { flex-direction: column; gap: 1rem; }
+      .breathing-setting-group { flex-direction: row; gap: 0.75rem; }
+      .breathing-setting-label { min-width: 50px; }
     }
 
     @media (min-height: 800px) {
