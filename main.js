@@ -1,5 +1,8 @@
 import { initStrudel, evaluate } from '@strudel/web';
+import { inject } from '@vercel/analytics';
 import { tracks, trackKeys, visualThemes, trackCategories } from './tracks.js';
+
+inject();
 
 // =============================================================================
 // DOM Elements
