@@ -16,6 +16,7 @@
       display: flex;
       flex-direction: column;
       justify-content: center;
+      overflow-x: hidden;
     }
 
     .container {
@@ -23,6 +24,7 @@
       margin: 0 auto;
       padding: 2rem 1.5rem;
       width: 100%;
+      overflow-x: hidden;
     }
 
     header {
@@ -230,6 +232,7 @@
       display: flex;
       align-items: center;
       gap: 1rem;
+      min-width: 0;
     }
 
     .volume-control svg {
@@ -241,6 +244,7 @@
 
     .volume-slider {
       flex: 1;
+      min-width: 0;
       -webkit-appearance: none;
       appearance: none;
       height: 4px;
@@ -279,6 +283,7 @@
       display: flex;
       align-items: center;
       gap: 0.5rem;
+      min-width: 0;
     }
 
     .sound-icon {
@@ -295,6 +300,7 @@
 
     .sound-slider {
       flex: 1;
+      min-width: 0;
       -webkit-appearance: none;
       appearance: none;
       height: 4px;
@@ -593,15 +599,36 @@
       font-size: 0.7rem;
       color: #6b7394;
       letter-spacing: 1px;
+      padding: 0 0.5rem;
     }
 
     @media (max-width: 500px) {
-      .container { padding: 1.5rem 1.25rem; }
-      .logo { font-size: 2rem; letter-spacing: 8px; }
-      .player-card { padding: 1.5rem 1.25rem; }
+      .container { padding: 1.5rem 1rem; }
+      header { margin-bottom: 1.25rem; }
+      .logo { font-size: 1.75rem; letter-spacing: 6px; }
+      .tagline { letter-spacing: 2px; }
+      .player-card { padding: 1.5rem 1rem; }
       .play-btn { width: 70px; height: 70px; }
       .skip-btn { width: 44px; height: 44px; }
       .controls { gap: 1.5rem; }
+      .timer-presets { flex-wrap: wrap; }
+      .timer-controls { flex-wrap: wrap; }
+      .keyboard-hint { display: none; }
+      .timer-time { font-size: 2.5rem; letter-spacing: 2px; }
+      .ambience-grid { gap: 0.75rem 1rem; }
+      .footer { letter-spacing: 0.5px; }
+    }
+
+    @media (max-width: 360px) {
+      .container { padding: 1rem 0.75rem; }
+      header { margin-bottom: 1rem; }
+      .logo { font-size: 1.5rem; letter-spacing: 4px; }
+      .player-card { padding: 1.25rem 0.75rem; border-radius: 20px; }
+      .mood-selector select { padding: 0.9rem 1rem; font-size: 0.9rem; }
+      .timer-card { padding: 1.25rem 1rem; }
+      .tasks-card { padding: 1.25rem 1rem; }
+      .timer-time { font-size: 2.25rem; }
+      .ambience-grid { gap: 0.5rem 0.75rem; }
     }
 
     @media (min-height: 800px) {
