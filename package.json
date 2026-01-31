@@ -1,7 +1,7 @@
 {
   "name": "drift",
   "version": "1.0.0",
-  "description": "Strudel live coding music project",
+  "description": "Focus & relaxation web app with generative ambient music",
   "type": "module",
   "scripts": {
     "dev": "vite",
