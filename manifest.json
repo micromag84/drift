@@ -1,0 +1,23 @@
+{
+  "name": "Drift - Focus & Relaxation",
+  "short_name": "Drift",
+  "description": "Ambient music for focus and relaxation with mood presets, visualizer, Pomodoro timer, and nature sounds",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a1c2e",
+  "theme_color": "#1a1c2e",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
