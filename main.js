@@ -158,6 +158,100 @@ const tracks = {
 
 const trackKeys = Object.keys(tracks);
 
+// Visual themes for each track category
+const visualThemes = {
+  focus: {
+    baseHue: 210,        // Blue
+    saturation: 30,
+    waveCount: 3,
+    particleCount: 8,
+    glowIntensity: 0.8,
+    speed: 1.0,
+    bgColor: [26, 28, 46]
+  },
+  chill: {
+    baseHue: 30,         // Warm orange/amber
+    saturation: 40,
+    waveCount: 5,
+    particleCount: 16,
+    glowIntensity: 1.2,
+    speed: 0.8,
+    bgColor: [35, 28, 30]
+  },
+  nature: {
+    baseHue: 140,        // Green
+    saturation: 35,
+    waveCount: 6,
+    particleCount: 20,
+    glowIntensity: 0.9,
+    speed: 0.6,
+    bgColor: [24, 32, 30]
+  },
+  ambient: {
+    baseHue: 260,        // Purple
+    saturation: 25,
+    waveCount: 4,
+    particleCount: 10,
+    glowIntensity: 1.5,
+    speed: 0.4,
+    bgColor: [30, 26, 40]
+  },
+  wellness: {
+    baseHue: 300,        // Pink/magenta
+    saturation: 20,
+    waveCount: 3,
+    particleCount: 6,
+    glowIntensity: 1.0,
+    speed: 0.5,
+    bgColor: [32, 26, 35]
+  },
+  moody: {
+    baseHue: 240,        // Deep blue/indigo
+    saturation: 35,
+    waveCount: 4,
+    particleCount: 8,
+    glowIntensity: 0.7,
+    speed: 0.7,
+    bgColor: [20, 22, 35]
+  }
+};
+
+// Map tracks to their categories
+const trackCategories = {
+  deepfocus: 'focus', flow: 'focus', minimal: 'focus', study: 'focus',
+  lofi: 'chill', coffee: 'chill', jazz: 'chill', vinyl: 'chill',
+  rain: 'nature', ocean: 'nature', forest: 'nature', thunder: 'nature',
+  ambient: 'ambient', drone: 'ambient', ethereal: 'ambient', cosmos: 'ambient',
+  meditation: 'wellness', breathing: 'wellness', sleep: 'wellness', healing: 'wellness',
+  night: 'moody', melancholy: 'moody', noir: 'moody', mystery: 'moody'
+};
+
+// Current theme with smooth transitions
+let currentTheme = { ...visualThemes.focus };
+let targetTheme = { ...visualThemes.focus };
+
+function getThemeForTrack(trackName) {
+  const category = trackCategories[trackName] || 'focus';
+  return visualThemes[category];
+}
+
+function lerpValue(current, target, speed) {
+  return current + (target - current) * speed;
+}
+
+function updateThemeTransition() {
+  const transitionSpeed = 0.03;
+  currentTheme.baseHue = lerpValue(currentTheme.baseHue, targetTheme.baseHue, transitionSpeed);
+  currentTheme.saturation = lerpValue(currentTheme.saturation, targetTheme.saturation, transitionSpeed);
+  currentTheme.waveCount = Math.round(lerpValue(currentTheme.waveCount, targetTheme.waveCount, transitionSpeed));
+  currentTheme.particleCount = Math.round(lerpValue(currentTheme.particleCount, targetTheme.particleCount, transitionSpeed));
+  currentTheme.glowIntensity = lerpValue(currentTheme.glowIntensity, targetTheme.glowIntensity, transitionSpeed);
+  currentTheme.speed = lerpValue(currentTheme.speed, targetTheme.speed, transitionSpeed);
+  for (let i = 0; i < 3; i++) {
+    currentTheme.bgColor[i] = lerpValue(currentTheme.bgColor[i], targetTheme.bgColor[i], transitionSpeed);
+  }
+}
+
 // DOM Elements
 const loadingEl = document.getElementById('loading');
 const trackSelect = document.getElementById('track-select');
@@ -178,6 +272,15 @@ let time = 0;
 let volume = 0.7;
 let masterGain = null;
 let strudelReady = false;
+
+// Beat detection state
+let prevBass = 0;
+let beatEnergy = 0;
+let beatDecay = 0;
+let beatHistory = new Array(30).fill(0);
+let historyIndex = 0;
+let beatRings = []; // Expanding ring effects on beats
+let beatParticles = []; // Burst particles on beats
 
 // Initialize Strudel
 try {
@@ -231,32 +334,140 @@ function resizeCanvas() {
   ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
 }
 
-// Calm, flowing visualizer
+// Beat detection - returns true when a beat is detected
+function detectBeat(bass) {
+  // Update history for adaptive threshold
+  beatHistory[historyIndex] = bass;
+  historyIndex = (historyIndex + 1) % beatHistory.length;
+
+  // Calculate average energy over history
+  const avgEnergy = beatHistory.reduce((a, b) => a + b, 0) / beatHistory.length;
+
+  // Beat detection: current bass significantly higher than average and previous
+  const threshold = Math.max(avgEnergy * 1.4, 60);
+  const isBeat = bass > threshold && bass > prevBass * 1.2 && beatDecay <= 0;
+
+  prevBass = bass;
+
+  if (isBeat) {
+    beatDecay = 8; // Cooldown frames to prevent double triggers
+    beatEnergy = 1.0;
+    return true;
+  }
+
+  beatDecay = Math.max(0, beatDecay - 1);
+  beatEnergy *= 0.92; // Smooth decay
+  return false;
+}
+
+// Calm, flowing visualizer with beat response and theme support
 function draw() {
   const width = canvas.offsetWidth;
   const height = canvas.offsetHeight;
 
+  // Smoothly transition theme colors
+  updateThemeTransition();
+
   analyser.getByteFrequencyData(dataArray);
 
-  // Soft fade
-  ctx.fillStyle = 'rgba(26, 28, 46, 0.08)';
+  // Soft fade - faster fade on beats for more contrast, using theme background
+  const fadeAlpha = 0.08 + beatEnergy * 0.04;
+  const bg = currentTheme.bgColor;
+  ctx.fillStyle = `rgba(${Math.round(bg[0])}, ${Math.round(bg[1])}, ${Math.round(bg[2])}, ${fadeAlpha})`;
   ctx.fillRect(0, 0, width, height);
 
-  time += 0.008;
+  time += 0.008 * currentTheme.speed;
 
-  // Get average levels
+  // Get average levels for different frequency bands
   const bass = dataArray.slice(0, 8).reduce((a, b) => a + b, 0) / 8;
   const mid = dataArray.slice(8, 40).reduce((a, b) => a + b, 0) / 32;
+  const high = dataArray.slice(40, 80).reduce((a, b) => a + b, 0) / 40;
 
-  // Soft flowing waves
-  const waves = 4;
+  // Detect beats
+  const isBeat = detectBeat(bass);
+
+  // Theme-based hue
+  const themeHue = currentTheme.baseHue;
+  const themeSat = currentTheme.saturation;
+
+  // Spawn beat ring on beat
+  if (isBeat) {
+    beatRings.push({
+      x: width / 2,
+      y: height / 2,
+      radius: 20,
+      maxRadius: 120 + bass,
+      alpha: 0.6,
+      hue: themeHue + Math.random() * 40 - 20
+    });
+
+    // Spawn burst particles on beat
+    const particleCount = 6 + Math.floor(bass / 30);
+    for (let i = 0; i < particleCount; i++) {
+      const angle = (Math.PI * 2 * i) / particleCount + Math.random() * 0.3;
+      const speed = 2 + Math.random() * 3;
+      beatParticles.push({
+        x: width / 2,
+        y: height / 2,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        size: 3 + Math.random() * 4,
+        alpha: 0.7,
+        hue: themeHue + Math.random() * 60 - 30
+      });
+    }
+  }
+
+  // Draw and update beat rings
+  for (let i = beatRings.length - 1; i >= 0; i--) {
+    const ring = beatRings[i];
+    const progress = ring.radius / ring.maxRadius;
+
+    ctx.beginPath();
+    ctx.arc(ring.x, ring.y, ring.radius, 0, Math.PI * 2);
+    ctx.strokeStyle = `hsla(${ring.hue}, ${themeSat + 20}%, 65%, ${ring.alpha * (1 - progress)})`;
+    ctx.lineWidth = 3 - progress * 2;
+    ctx.stroke();
+
+    ring.radius += 4 + beatEnergy * 2;
+    ring.alpha *= 0.96;
+
+    if (ring.radius > ring.maxRadius || ring.alpha < 0.01) {
+      beatRings.splice(i, 1);
+    }
+  }
+
+  // Draw and update beat particles
+  for (let i = beatParticles.length - 1; i >= 0; i--) {
+    const p = beatParticles[i];
+
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fillStyle = `hsla(${p.hue}, ${themeSat + 20}%, 70%, ${p.alpha})`;
+    ctx.fill();
+
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vx *= 0.98;
+    p.vy *= 0.98;
+    p.alpha *= 0.94;
+    p.size *= 0.97;
+
+    if (p.alpha < 0.01 || p.size < 0.5) {
+      beatParticles.splice(i, 1);
+    }
+  }
+
+  // Soft flowing waves - amplitude responds to beats and bass
+  const waves = currentTheme.waveCount;
   for (let w = 0; w < waves; w++) {
     ctx.beginPath();
-    const baseY = height * (0.3 + w * 0.15);
-    const amplitude = 15 + (bass / 20) + w * 5;
+    const baseY = height * (0.25 + w * (0.5 / waves));
+    const beatBoost = beatEnergy * 20;
+    const amplitude = 15 + (bass / 20) + w * 5 + beatBoost;
     const frequency = 0.008 + w * 0.002;
-    const speed = time * (0.5 + w * 0.2);
-    const alpha = 0.15 - w * 0.03;
+    const speed = time * (0.5 + w * 0.2) + beatEnergy * 0.5;
+    const alpha = 0.15 - w * 0.03 + beatEnergy * 0.1;
 
     for (let x = 0; x <= width; x += 3) {
       const y = baseY +
@@ -270,14 +481,15 @@ function draw() {
       }
     }
 
-    const hue = 210 + w * 20;
-    ctx.strokeStyle = `hsla(${hue}, 30%, 60%, ${alpha})`;
-    ctx.lineWidth = 2;
+    const hue = themeHue + w * 20 + beatEnergy * 30;
+    const saturation = themeSat + beatEnergy * 20;
+    ctx.strokeStyle = `hsla(${hue}, ${saturation}%, 60%, ${Math.min(alpha, 0.4)})`;
+    ctx.lineWidth = 2 + beatEnergy;
     ctx.stroke();
   }
 
-  // Floating particles
-  const particles = 12;
+  // Floating particles - respond to mid frequencies
+  const particles = currentTheme.particleCount;
   for (let i = 0; i < particles; i++) {
     const freqIndex = Math.floor((i / particles) * dataArray.length);
     const value = dataArray[freqIndex];
@@ -285,29 +497,50 @@ function draw() {
     if (value > 30) {
       const x = (Math.sin(time * 0.3 + i * 0.8) * 0.4 + 0.5) * width;
       const y = (Math.cos(time * 0.2 + i * 0.6) * 0.3 + 0.5) * height;
-      const size = 2 + (value / 100);
-      const alpha = 0.2 + (value / 500);
+      const beatPulse = beatEnergy * 3;
+      const size = 2 + (value / 100) + beatPulse;
+      const alpha = 0.2 + (value / 500) + beatEnergy * 0.2;
 
       ctx.beginPath();
       ctx.arc(x, y, size, 0, Math.PI * 2);
-      ctx.fillStyle = `hsla(${220 + i * 10}, 40%, 70%, ${alpha})`;
+      ctx.fillStyle = `hsla(${themeHue + i * 10 + mid / 3}, ${themeSat + 10}%, 70%, ${Math.min(alpha, 0.6)})`;
       ctx.fill();
     }
   }
 
-  // Central glow based on bass
-  const glowSize = 40 + (bass / 4);
+  // Central glow - pulses strongly on beats
+  const beatPulse = beatEnergy * 40 * currentTheme.glowIntensity;
+  const glowSize = (40 + (bass / 4) + beatPulse) * currentTheme.glowIntensity;
+  const glowAlpha = (0.1 + bass / 1000 + beatEnergy * 0.15) * currentTheme.glowIntensity;
+
   const gradient = ctx.createRadialGradient(
     width / 2, height / 2, 0,
     width / 2, height / 2, glowSize
   );
-  gradient.addColorStop(0, `hsla(220, 40%, 60%, ${0.1 + bass / 1000})`);
-  gradient.addColorStop(1, 'hsla(220, 40%, 60%, 0)');
+  gradient.addColorStop(0, `hsla(${themeHue + beatEnergy * 20}, ${themeSat + beatEnergy * 20}%, 60%, ${glowAlpha})`);
+  gradient.addColorStop(0.5, `hsla(${themeHue}, ${themeSat}%, 60%, ${glowAlpha * 0.4})`);
+  gradient.addColorStop(1, `hsla(${themeHue}, ${themeSat}%, 60%, 0)`);
 
   ctx.beginPath();
   ctx.arc(width / 2, height / 2, glowSize, 0, Math.PI * 2);
   ctx.fillStyle = gradient;
   ctx.fill();
+
+  // High frequency sparkles scattered around
+  if (high > 50) {
+    const sparkleCount = Math.floor(high / 40);
+    for (let i = 0; i < sparkleCount; i++) {
+      const sx = Math.random() * width;
+      const sy = Math.random() * height;
+      const sparkleSize = 1 + Math.random() * 2;
+      const sparkleAlpha = 0.1 + (high / 500);
+
+      ctx.beginPath();
+      ctx.arc(sx, sy, sparkleSize, 0, Math.PI * 2);
+      ctx.fillStyle = `hsla(${themeHue - 20 + Math.random() * 40}, ${themeSat}%, 80%, ${sparkleAlpha})`;
+      ctx.fill();
+    }
+  }
 
   animationId = requestAnimationFrame(draw);
 }
@@ -317,9 +550,20 @@ function stopVisualizer() {
     cancelAnimationFrame(animationId);
     animationId = null;
   }
-  // Fade out
+
+  // Reset beat detection state
+  prevBass = 0;
+  beatEnergy = 0;
+  beatDecay = 0;
+  beatHistory.fill(0);
+  historyIndex = 0;
+  beatRings = [];
+  beatParticles = [];
+
+  // Fade out using current theme background
   const fadeOut = () => {
-    ctx.fillStyle = 'rgba(26, 28, 46, 0.1)';
+    const bg = currentTheme.bgColor;
+    ctx.fillStyle = `rgba(${Math.round(bg[0])}, ${Math.round(bg[1])}, ${Math.round(bg[2])}, 0.1)`;
     ctx.fillRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
   };
   for (let i = 0; i < 20; i++) {
@@ -348,6 +592,11 @@ function play() {
   if (!strudelReady) return;
   if (!analyser) initVisualizer();
   const track = getSelectedTrack();
+
+  // Update visual theme for this track
+  const newTheme = getThemeForTrack(trackSelect.value);
+  targetTheme = { ...newTheme, bgColor: [...newTheme.bgColor] };
+
   evaluate(track.pattern);
   setPlaying(true);
   if (!animationId) draw();
