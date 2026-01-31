@@ -1,202 +1,240 @@
 import { initStrudel, evaluate } from '@strudel/web';
 import { tracks, trackKeys, visualThemes, trackCategories } from './tracks.js';
 
-// Current theme with smooth transitions
-let currentTheme = { ...visualThemes.focus };
-let targetTheme = { ...visualThemes.focus };
+// =============================================================================
+// DOM Elements
+// =============================================================================
+
+const elements = {
+  loading: document.getElementById('loading'),
+  trackSelect: document.getElementById('track-select'),
+  playBtn: document.getElementById('play'),
+  playIcon: document.getElementById('play-icon'),
+  pauseIcon: document.getElementById('pause-icon'),
+  prevBtn: document.getElementById('prev'),
+  nextBtn: document.getElementById('next'),
+  volumeSlider: document.getElementById('volume'),
+  bpmDisplay: document.getElementById('bpm'),
+  canvas: document.getElementById('visualizer'),
+  // Timer
+  timerTime: document.getElementById('timer-time'),
+  timerMode: document.getElementById('timer-mode'),
+  timerStartBtn: document.getElementById('timer-start'),
+  timerResetBtn: document.getElementById('timer-reset'),
+  timerSkipBtn: document.getElementById('timer-skip'),
+  presetBtns: document.querySelectorAll('.preset-btn'),
+  // Nature sounds
+  soundRows: document.querySelectorAll('.sound-row'),
+  // Tasks
+  taskInput: document.getElementById('task-input'),
+  taskList: document.getElementById('task-list'),
+  tasksCount: document.getElementById('tasks-count'),
+};
+
+const ctx = elements.canvas.getContext('2d');
+
+// =============================================================================
+// State
+// =============================================================================
+
+const state = {
+  isPlaying: false,
+  volume: 0.7,
+  strudelReady: false,
+  time: 0,
+};
+
+const audioState = {
+  analyser: null,
+  masterGain: null,
+  dataArray: null,
+  animationId: null,
+  idleAnimationId: null,
+};
+
+const beatState = {
+  prevBass: 0,
+  energy: 0,
+  decay: 0,
+  history: new Array(30).fill(0),
+  historyIndex: 0,
+  rings: [],
+  particles: [],
+};
+
+const timerState = {
+  interval: null,
+  seconds: 25 * 60,
+  running: false,
+  mode: 'focus',
+  focusDuration: 25,
+  breakDuration: 5,
+};
+
+// Theme state with smooth transitions
+const theme = {
+  current: { ...visualThemes.focus },
+  target: { ...visualThemes.focus },
+};
+
+// =============================================================================
+// Utilities
+// =============================================================================
+
+const lerp = (current, target, speed) => current + (target - current) * speed;
+
+const formatTime = (seconds) => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+};
+
+const escapeHtml = (text) => {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+};
+
+// =============================================================================
+// Theme Management
+// =============================================================================
 
 function getThemeForTrack(trackName) {
   const category = trackCategories[trackName] || 'focus';
   return visualThemes[category];
 }
 
-function lerpValue(current, target, speed) {
-  return current + (target - current) * speed;
-}
-
 function updateThemeTransition() {
-  const transitionSpeed = 0.03;
-  currentTheme.baseHue = lerpValue(currentTheme.baseHue, targetTheme.baseHue, transitionSpeed);
-  currentTheme.saturation = lerpValue(currentTheme.saturation, targetTheme.saturation, transitionSpeed);
-  currentTheme.waveCount = Math.round(lerpValue(currentTheme.waveCount, targetTheme.waveCount, transitionSpeed));
-  currentTheme.particleCount = Math.round(lerpValue(currentTheme.particleCount, targetTheme.particleCount, transitionSpeed));
-  currentTheme.glowIntensity = lerpValue(currentTheme.glowIntensity, targetTheme.glowIntensity, transitionSpeed);
-  currentTheme.speed = lerpValue(currentTheme.speed, targetTheme.speed, transitionSpeed);
+  const speed = 0.03;
+  const { current, target } = theme;
+
+  current.baseHue = lerp(current.baseHue, target.baseHue, speed);
+  current.saturation = lerp(current.saturation, target.saturation, speed);
+  current.waveCount = Math.round(lerp(current.waveCount, target.waveCount, speed));
+  current.particleCount = Math.round(lerp(current.particleCount, target.particleCount, speed));
+  current.glowIntensity = lerp(current.glowIntensity, target.glowIntensity, speed);
+  current.speed = lerp(current.speed, target.speed, speed);
+
   for (let i = 0; i < 3; i++) {
-    currentTheme.bgColor[i] = lerpValue(currentTheme.bgColor[i], targetTheme.bgColor[i], transitionSpeed);
+    current.bgColor[i] = lerp(current.bgColor[i], target.bgColor[i], speed);
   }
 }
 
-// DOM Elements
-const loadingEl = document.getElementById('loading');
-const trackSelect = document.getElementById('track-select');
-const playBtn = document.getElementById('play');
-const playIcon = document.getElementById('play-icon');
-const pauseIcon = document.getElementById('pause-icon');
-const prevBtn = document.getElementById('prev');
-const nextBtn = document.getElementById('next');
-const volumeSlider = document.getElementById('volume');
-const bpmDisplay = document.getElementById('bpm');
-const canvas = document.getElementById('visualizer');
-const ctx = canvas.getContext('2d');
+// =============================================================================
+// Audio Setup
+// =============================================================================
 
-// State
-let isPlaying = false;
-let analyser, dataArray, animationId;
-let time = 0;
-let volume = 0.7;
-let masterGain = null;
-let strudelReady = false;
-let idleAnimationId = null;
-
-// Beat detection state
-let prevBass = 0;
-let beatEnergy = 0;
-let beatDecay = 0;
-let beatHistory = new Array(30).fill(0);
-let historyIndex = 0;
-let beatRings = []; // Expanding ring effects on beats
-let beatParticles = []; // Burst particles on beats
-
-// Initialize Strudel
-try {
-  await initStrudel();
-  strudelReady = true;
-  loadingEl.classList.add('hidden');
-} catch (err) {
-  console.error('Failed to initialize Strudel:', err);
-  loadingEl.querySelector('.loading-text').textContent = 'Failed to load audio engine. Please refresh.';
-  loadingEl.querySelector('.spinner').style.display = 'none';
-  playBtn.disabled = true;
-  playBtn.style.opacity = '0.5';
-  playBtn.style.cursor = 'not-allowed';
+function getAudioContext() {
+  return globalThis.getAudioContext();
 }
 
-// Setup master volume control
 function setupMasterGain() {
-  const audioCtx = globalThis.getAudioContext();
-  masterGain = audioCtx.createGain();
-  masterGain.gain.value = volume;
-  masterGain.connect(audioCtx.destination);
+  const audioCtx = getAudioContext();
+  audioState.masterGain = audioCtx.createGain();
+  audioState.masterGain.gain.value = state.volume;
+  audioState.masterGain.connect(audioCtx.destination);
 }
 
-// Visualizer setup
 function initVisualizer() {
-  const audioCtx = globalThis.getAudioContext();
+  const audioCtx = getAudioContext();
 
-  if (!masterGain) setupMasterGain();
+  if (!audioState.masterGain) setupMasterGain();
 
-  analyser = audioCtx.createAnalyser();
-  analyser.fftSize = 256;
-  analyser.smoothingTimeConstant = 0.85;
-  dataArray = new Uint8Array(analyser.frequencyBinCount);
-  analyser.connect(masterGain);
+  audioState.analyser = audioCtx.createAnalyser();
+  audioState.analyser.fftSize = 256;
+  audioState.analyser.smoothingTimeConstant = 0.85;
+  audioState.dataArray = new Uint8Array(audioState.analyser.frequencyBinCount);
+  audioState.analyser.connect(audioState.masterGain);
 
-  // Monkey-patch AudioNode.connect to route all audio through our analyser for visualization.
-  // This intercepts connections to the destination and redirects them through analyser → masterGain → destination.
+  // Monkey-patch AudioNode.connect to route all audio through analyser
   const dest = audioCtx.destination;
   const originalConnect = AudioNode.prototype.connect;
   AudioNode.prototype.connect = function(target, ...args) {
-    if (target === dest && this !== analyser && this !== masterGain) {
-      return originalConnect.call(this, analyser, ...args);
+    if (target === dest && this !== audioState.analyser && this !== audioState.masterGain) {
+      return originalConnect.call(this, audioState.analyser, ...args);
     }
     return originalConnect.call(this, target, ...args);
   };
 }
 
-function resizeCanvas() {
-  canvas.width = canvas.offsetWidth * window.devicePixelRatio;
-  canvas.height = canvas.offsetHeight * window.devicePixelRatio;
-  ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
-}
+// =============================================================================
+// Beat Detection
+// =============================================================================
 
-// Beat detection - returns true when a beat is detected
 function detectBeat(bass) {
-  // Update history for adaptive threshold
-  beatHistory[historyIndex] = bass;
-  historyIndex = (historyIndex + 1) % beatHistory.length;
+  const { history, historyIndex } = beatState;
 
-  // Calculate average energy over history
-  const avgEnergy = beatHistory.reduce((a, b) => a + b, 0) / beatHistory.length;
+  history[beatState.historyIndex] = bass;
+  beatState.historyIndex = (historyIndex + 1) % history.length;
 
-  // Beat detection: current bass significantly higher than average and previous
+  const avgEnergy = history.reduce((a, b) => a + b, 0) / history.length;
   const threshold = Math.max(avgEnergy * 1.4, 60);
-  const isBeat = bass > threshold && bass > prevBass * 1.2 && beatDecay <= 0;
+  const isBeat = bass > threshold && bass > beatState.prevBass * 1.2 && beatState.decay <= 0;
 
-  prevBass = bass;
+  beatState.prevBass = bass;
 
   if (isBeat) {
-    beatDecay = 8; // Cooldown frames to prevent double triggers
-    beatEnergy = 1.0;
+    beatState.decay = 8;
+    beatState.energy = 1.0;
     return true;
   }
 
-  beatDecay = Math.max(0, beatDecay - 1);
-  beatEnergy *= 0.92; // Smooth decay
+  beatState.decay = Math.max(0, beatState.decay - 1);
+  beatState.energy *= 0.92;
   return false;
 }
 
-// Calm, flowing visualizer with beat response and theme support
-function draw() {
-  const width = canvas.offsetWidth;
-  const height = canvas.offsetHeight;
+function resetBeatState() {
+  beatState.prevBass = 0;
+  beatState.energy = 0;
+  beatState.decay = 0;
+  beatState.history.fill(0);
+  beatState.historyIndex = 0;
+  beatState.rings = [];
+  beatState.particles = [];
+}
 
-  // Smoothly transition theme colors
-  updateThemeTransition();
+function spawnBeatEffects(width, height, bass, themeHue) {
+  // Ring effect
+  beatState.rings.push({
+    x: width / 2,
+    y: height / 2,
+    radius: 20,
+    maxRadius: 120 + bass,
+    alpha: 0.6,
+    hue: themeHue + Math.random() * 40 - 20,
+  });
 
-  analyser.getByteFrequencyData(dataArray);
-
-  // Soft fade - faster fade on beats for more contrast, using theme background
-  const fadeAlpha = 0.08 + beatEnergy * 0.04;
-  const bg = currentTheme.bgColor;
-  ctx.fillStyle = `rgba(${Math.round(bg[0])}, ${Math.round(bg[1])}, ${Math.round(bg[2])}, ${fadeAlpha})`;
-  ctx.fillRect(0, 0, width, height);
-
-  time += 0.008 * currentTheme.speed;
-
-  // Get average levels for different frequency bands
-  const bass = dataArray.slice(0, 8).reduce((a, b) => a + b, 0) / 8;
-  const mid = dataArray.slice(8, 40).reduce((a, b) => a + b, 0) / 32;
-  const high = dataArray.slice(40, 80).reduce((a, b) => a + b, 0) / 40;
-
-  // Detect beats
-  const isBeat = detectBeat(bass);
-
-  // Theme-based hue
-  const themeHue = currentTheme.baseHue;
-  const themeSat = currentTheme.saturation;
-
-  // Spawn beat ring on beat
-  if (isBeat) {
-    beatRings.push({
+  // Burst particles
+  const count = 6 + Math.floor(bass / 30);
+  for (let i = 0; i < count; i++) {
+    const angle = (Math.PI * 2 * i) / count + Math.random() * 0.3;
+    const speed = 2 + Math.random() * 3;
+    beatState.particles.push({
       x: width / 2,
       y: height / 2,
-      radius: 20,
-      maxRadius: 120 + bass,
-      alpha: 0.6,
-      hue: themeHue + Math.random() * 40 - 20
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      size: 3 + Math.random() * 4,
+      alpha: 0.7,
+      hue: themeHue + Math.random() * 60 - 30,
     });
-
-    // Spawn burst particles on beat
-    const particleCount = 6 + Math.floor(bass / 30);
-    for (let i = 0; i < particleCount; i++) {
-      const angle = (Math.PI * 2 * i) / particleCount + Math.random() * 0.3;
-      const speed = 2 + Math.random() * 3;
-      beatParticles.push({
-        x: width / 2,
-        y: height / 2,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        size: 3 + Math.random() * 4,
-        alpha: 0.7,
-        hue: themeHue + Math.random() * 60 - 30
-      });
-    }
   }
+}
 
-  // Draw and update beat rings
-  for (let i = beatRings.length - 1; i >= 0; i--) {
-    const ring = beatRings[i];
+// =============================================================================
+// Visualizer Drawing
+// =============================================================================
+
+function drawBackground(width, height, fadeAlpha = 0.08) {
+  const bg = theme.current.bgColor;
+  ctx.fillStyle = `rgba(${Math.round(bg[0])}, ${Math.round(bg[1])}, ${Math.round(bg[2])}, ${fadeAlpha})`;
+  ctx.fillRect(0, 0, width, height);
+}
+
+function drawBeatRings(themeSat) {
+  for (let i = beatState.rings.length - 1; i >= 0; i--) {
+    const ring = beatState.rings[i];
     const progress = ring.radius / ring.maxRadius;
 
     ctx.beginPath();
@@ -205,17 +243,18 @@ function draw() {
     ctx.lineWidth = 3 - progress * 2;
     ctx.stroke();
 
-    ring.radius += 4 + beatEnergy * 2;
+    ring.radius += 4 + beatState.energy * 2;
     ring.alpha *= 0.96;
 
     if (ring.radius > ring.maxRadius || ring.alpha < 0.01) {
-      beatRings.splice(i, 1);
+      beatState.rings.splice(i, 1);
     }
   }
+}
 
-  // Draw and update beat particles
-  for (let i = beatParticles.length - 1; i >= 0; i--) {
-    const p = beatParticles[i];
+function drawBeatParticles(themeSat) {
+  for (let i = beatState.particles.length - 1; i >= 0; i--) {
+    const p = beatState.particles[i];
 
     ctx.beginPath();
     ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
@@ -230,254 +269,288 @@ function draw() {
     p.size *= 0.97;
 
     if (p.alpha < 0.01 || p.size < 0.5) {
-      beatParticles.splice(i, 1);
+      beatState.particles.splice(i, 1);
     }
   }
+}
 
-  // Soft flowing waves - amplitude responds to beats and bass
-  const waves = currentTheme.waveCount;
+function drawWaves(width, height, options = {}) {
+  const {
+    amplitude: baseAmp = 10,
+    beatBoost = 0,
+    themeHue,
+    themeSat,
+    alphaBase = 0.08,
+    alphaDecay = 0.015,
+    lineWidth = 1.5,
+  } = options;
+
+  const waves = theme.current.waveCount;
+
   for (let w = 0; w < waves; w++) {
     ctx.beginPath();
     const baseY = height * (0.25 + w * (0.5 / waves));
-    const beatBoost = beatEnergy * 20;
-    const amplitude = 15 + (bass / 20) + w * 5 + beatBoost;
-    const frequency = 0.008 + w * 0.002;
-    const speed = time * (0.5 + w * 0.2) + beatEnergy * 0.5;
-    const alpha = 0.15 - w * 0.03 + beatEnergy * 0.1;
-
-    for (let x = 0; x <= width; x += 3) {
-      const y = baseY +
-        Math.sin(x * frequency + speed) * amplitude +
-        Math.sin(x * frequency * 2 + speed * 1.5) * (amplitude * 0.5);
-
-      if (x === 0) {
-        ctx.moveTo(x, y);
-      } else {
-        ctx.lineTo(x, y);
-      }
-    }
-
-    const hue = themeHue + w * 20 + beatEnergy * 30;
-    const saturation = themeSat + beatEnergy * 20;
-    ctx.strokeStyle = `hsla(${hue}, ${saturation}%, 60%, ${Math.min(alpha, 0.4)})`;
-    ctx.lineWidth = 2 + beatEnergy;
-    ctx.stroke();
-  }
-
-  // Floating particles - respond to mid frequencies
-  const particles = currentTheme.particleCount;
-  for (let i = 0; i < particles; i++) {
-    const freqIndex = Math.floor((i / particles) * dataArray.length);
-    const value = dataArray[freqIndex];
-
-    if (value > 30) {
-      const x = (Math.sin(time * 0.3 + i * 0.8) * 0.4 + 0.5) * width;
-      const y = (Math.cos(time * 0.2 + i * 0.6) * 0.3 + 0.5) * height;
-      const beatPulse = beatEnergy * 3;
-      const size = 2 + (value / 100) + beatPulse;
-      const alpha = 0.2 + (value / 500) + beatEnergy * 0.2;
-
-      ctx.beginPath();
-      ctx.arc(x, y, size, 0, Math.PI * 2);
-      ctx.fillStyle = `hsla(${themeHue + i * 10 + mid / 3}, ${themeSat + 10}%, 70%, ${Math.min(alpha, 0.6)})`;
-      ctx.fill();
-    }
-  }
-
-  // Central glow - pulses strongly on beats
-  const beatPulse = beatEnergy * 40 * currentTheme.glowIntensity;
-  const glowSize = (40 + (bass / 4) + beatPulse) * currentTheme.glowIntensity;
-  const glowAlpha = (0.1 + bass / 1000 + beatEnergy * 0.15) * currentTheme.glowIntensity;
-
-  const gradient = ctx.createRadialGradient(
-    width / 2, height / 2, 0,
-    width / 2, height / 2, glowSize
-  );
-  gradient.addColorStop(0, `hsla(${themeHue + beatEnergy * 20}, ${themeSat + beatEnergy * 20}%, 60%, ${glowAlpha})`);
-  gradient.addColorStop(0.5, `hsla(${themeHue}, ${themeSat}%, 60%, ${glowAlpha * 0.4})`);
-  gradient.addColorStop(1, `hsla(${themeHue}, ${themeSat}%, 60%, 0)`);
-
-  ctx.beginPath();
-  ctx.arc(width / 2, height / 2, glowSize, 0, Math.PI * 2);
-  ctx.fillStyle = gradient;
-  ctx.fill();
-
-  // High frequency sparkles scattered around
-  if (high > 50) {
-    const sparkleCount = Math.floor(high / 40);
-    for (let i = 0; i < sparkleCount; i++) {
-      const sx = Math.random() * width;
-      const sy = Math.random() * height;
-      const sparkleSize = 1 + Math.random() * 2;
-      const sparkleAlpha = 0.1 + (high / 500);
-
-      ctx.beginPath();
-      ctx.arc(sx, sy, sparkleSize, 0, Math.PI * 2);
-      ctx.fillStyle = `hsla(${themeHue - 20 + Math.random() * 40}, ${themeSat}%, 80%, ${sparkleAlpha})`;
-      ctx.fill();
-    }
-  }
-
-  animationId = requestAnimationFrame(draw);
-}
-
-function stopVisualizer() {
-  if (animationId) {
-    cancelAnimationFrame(animationId);
-    animationId = null;
-  }
-
-  // Reset beat detection state
-  prevBass = 0;
-  beatEnergy = 0;
-  beatDecay = 0;
-  beatHistory.fill(0);
-  historyIndex = 0;
-  beatRings = [];
-  beatParticles = [];
-
-  // Start idle visualization instead of fading out
-  startIdleVisualization();
-}
-
-// Idle visualization - calm ambient animation when not playing
-function drawIdle() {
-  const width = canvas.offsetWidth;
-  const height = canvas.offsetHeight;
-
-  // Smoothly transition theme colors
-  updateThemeTransition();
-
-  time += 0.004 * currentTheme.speed;
-
-  // Gentle fade using theme background
-  const bg = currentTheme.bgColor;
-  ctx.fillStyle = `rgba(${Math.round(bg[0])}, ${Math.round(bg[1])}, ${Math.round(bg[2])}, 0.06)`;
-  ctx.fillRect(0, 0, width, height);
-
-  const themeHue = currentTheme.baseHue;
-  const themeSat = currentTheme.saturation;
-
-  // Soft flowing waves - gentle idle animation
-  const waves = currentTheme.waveCount;
-  for (let w = 0; w < waves; w++) {
-    ctx.beginPath();
-    const baseY = height * (0.25 + w * (0.5 / waves));
-    const amplitude = 10 + w * 3;
+    const amplitude = baseAmp + w * 3 + beatBoost;
     const frequency = 0.006 + w * 0.0015;
-    const speed = time * (0.4 + w * 0.15);
-    const alpha = 0.08 - w * 0.015;
+    const speed = state.time * (0.4 + w * 0.15);
+    const alpha = alphaBase - w * alphaDecay;
 
     for (let x = 0; x <= width; x += 4) {
       const y = baseY +
         Math.sin(x * frequency + speed) * amplitude +
         Math.sin(x * frequency * 2.3 + speed * 1.3) * (amplitude * 0.4);
 
-      if (x === 0) {
-        ctx.moveTo(x, y);
-      } else {
-        ctx.lineTo(x, y);
-      }
+      if (x === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
     }
 
     const hue = themeHue + w * 15;
     ctx.strokeStyle = `hsla(${hue}, ${themeSat - 10}%, 55%, ${alpha})`;
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = lineWidth;
     ctx.stroke();
   }
+}
 
-  // Gentle floating particles
-  const particles = Math.floor(currentTheme.particleCount * 0.6);
+function drawFloatingParticles(width, height, options = {}) {
+  const {
+    themeHue,
+    themeSat,
+    dataArray = null,
+    threshold = 0,
+    beatPulse = 0,
+    alphaBase = 0.12,
+  } = options;
+
+  const particles = dataArray
+    ? theme.current.particleCount
+    : Math.floor(theme.current.particleCount * 0.6);
+
   for (let i = 0; i < particles; i++) {
-    const x = (Math.sin(time * 0.2 + i * 0.9) * 0.35 + 0.5) * width;
-    const y = (Math.cos(time * 0.15 + i * 0.7) * 0.25 + 0.5) * height;
-    const size = 1.5 + Math.sin(time + i) * 0.5;
-    const alpha = 0.12 + Math.sin(time * 0.5 + i * 0.3) * 0.05;
+    let value = 255;
+    if (dataArray) {
+      const freqIndex = Math.floor((i / particles) * dataArray.length);
+      value = dataArray[freqIndex];
+      if (value <= threshold) continue;
+    }
+
+    const x = (Math.sin(state.time * 0.2 + i * 0.9) * 0.35 + 0.5) * width;
+    const y = (Math.cos(state.time * 0.15 + i * 0.7) * 0.25 + 0.5) * height;
+    const size = dataArray
+      ? 2 + (value / 100) + beatPulse
+      : 1.5 + Math.sin(state.time + i) * 0.5;
+    const alpha = dataArray
+      ? Math.min(0.2 + (value / 500) + beatState.energy * 0.2, 0.6)
+      : alphaBase + Math.sin(state.time * 0.5 + i * 0.3) * 0.05;
 
     ctx.beginPath();
     ctx.arc(x, y, size, 0, Math.PI * 2);
     ctx.fillStyle = `hsla(${themeHue + i * 8}, ${themeSat}%, 65%, ${alpha})`;
     ctx.fill();
   }
+}
 
-  // Subtle central glow
-  const glowSize = 30 + Math.sin(time * 0.3) * 5;
-  const glowAlpha = 0.06 + Math.sin(time * 0.4) * 0.02;
+function drawCentralGlow(width, height, options = {}) {
+  const {
+    themeHue,
+    themeSat,
+    bass = 0,
+    beatPulse = 0,
+  } = options;
+
+  const intensity = theme.current.glowIntensity;
+  const glowSize = (bass ? 40 + bass / 4 + beatPulse * 40 : 30 + Math.sin(state.time * 0.3) * 5) * intensity;
+  const glowAlpha = bass
+    ? (0.1 + bass / 1000 + beatState.energy * 0.15) * intensity
+    : (0.06 + Math.sin(state.time * 0.4) * 0.02) * intensity;
 
   const gradient = ctx.createRadialGradient(
     width / 2, height / 2, 0,
-    width / 2, height / 2, glowSize * currentTheme.glowIntensity
+    width / 2, height / 2, glowSize
   );
-  gradient.addColorStop(0, `hsla(${themeHue}, ${themeSat}%, 55%, ${glowAlpha * currentTheme.glowIntensity})`);
-  gradient.addColorStop(0.6, `hsla(${themeHue}, ${themeSat}%, 55%, ${glowAlpha * 0.3 * currentTheme.glowIntensity})`);
-  gradient.addColorStop(1, `hsla(${themeHue}, ${themeSat}%, 55%, 0)`);
+
+  const hueShift = beatState.energy * 20;
+  gradient.addColorStop(0, `hsla(${themeHue + hueShift}, ${themeSat + beatState.energy * 20}%, 60%, ${glowAlpha})`);
+  gradient.addColorStop(bass ? 0.5 : 0.6, `hsla(${themeHue}, ${themeSat}%, ${bass ? 60 : 55}%, ${glowAlpha * (bass ? 0.4 : 0.3)})`);
+  gradient.addColorStop(1, `hsla(${themeHue}, ${themeSat}%, ${bass ? 60 : 55}%, 0)`);
 
   ctx.beginPath();
-  ctx.arc(width / 2, height / 2, glowSize * currentTheme.glowIntensity, 0, Math.PI * 2);
+  ctx.arc(width / 2, height / 2, glowSize, 0, Math.PI * 2);
   ctx.fillStyle = gradient;
   ctx.fill();
+}
 
-  idleAnimationId = requestAnimationFrame(drawIdle);
+function drawSparkles(width, height, high, themeHue, themeSat) {
+  if (high <= 50) return;
+
+  const count = Math.floor(high / 40);
+  for (let i = 0; i < count; i++) {
+    const x = Math.random() * width;
+    const y = Math.random() * height;
+    const size = 1 + Math.random() * 2;
+    const alpha = 0.1 + high / 500;
+
+    ctx.beginPath();
+    ctx.arc(x, y, size, 0, Math.PI * 2);
+    ctx.fillStyle = `hsla(${themeHue - 20 + Math.random() * 40}, ${themeSat}%, 80%, ${alpha})`;
+    ctx.fill();
+  }
+}
+
+// Main draw loop (audio-reactive)
+function draw() {
+  const width = elements.canvas.offsetWidth;
+  const height = elements.canvas.offsetHeight;
+
+  updateThemeTransition();
+  audioState.analyser.getByteFrequencyData(audioState.dataArray);
+
+  const fadeAlpha = 0.08 + beatState.energy * 0.04;
+  drawBackground(width, height, fadeAlpha);
+
+  state.time += 0.008 * theme.current.speed;
+
+  // Frequency analysis
+  const data = audioState.dataArray;
+  const bass = data.slice(0, 8).reduce((a, b) => a + b, 0) / 8;
+  const high = data.slice(40, 80).reduce((a, b) => a + b, 0) / 40;
+
+  const themeHue = theme.current.baseHue;
+  const themeSat = theme.current.saturation;
+
+  if (detectBeat(bass)) {
+    spawnBeatEffects(width, height, bass, themeHue);
+  }
+
+  drawBeatRings(themeSat);
+  drawBeatParticles(themeSat);
+
+  drawWaves(width, height, {
+    amplitude: 15 + bass / 20,
+    beatBoost: beatState.energy * 20,
+    themeHue,
+    themeSat,
+    alphaBase: 0.15,
+    alphaDecay: 0.03,
+    lineWidth: 2 + beatState.energy,
+  });
+
+  drawFloatingParticles(width, height, {
+    themeHue,
+    themeSat,
+    dataArray: data,
+    threshold: 30,
+    beatPulse: beatState.energy * 3,
+  });
+
+  drawCentralGlow(width, height, { themeHue, themeSat, bass, beatPulse: beatState.energy });
+  drawSparkles(width, height, high, themeHue, themeSat);
+
+  audioState.animationId = requestAnimationFrame(draw);
+}
+
+// Idle draw loop (no audio)
+function drawIdle() {
+  const width = elements.canvas.offsetWidth;
+  const height = elements.canvas.offsetHeight;
+
+  updateThemeTransition();
+  state.time += 0.004 * theme.current.speed;
+
+  drawBackground(width, height, 0.06);
+
+  const themeHue = theme.current.baseHue;
+  const themeSat = theme.current.saturation;
+
+  drawWaves(width, height, { themeHue, themeSat });
+  drawFloatingParticles(width, height, { themeHue, themeSat });
+  drawCentralGlow(width, height, { themeHue, themeSat });
+
+  audioState.idleAnimationId = requestAnimationFrame(drawIdle);
 }
 
 function startIdleVisualization() {
-  if (idleAnimationId) return; // Already running
+  if (audioState.idleAnimationId) return;
   drawIdle();
 }
 
 function stopIdleVisualization() {
-  if (idleAnimationId) {
-    cancelAnimationFrame(idleAnimationId);
-    idleAnimationId = null;
+  if (audioState.idleAnimationId) {
+    cancelAnimationFrame(audioState.idleAnimationId);
+    audioState.idleAnimationId = null;
   }
 }
 
-// Track persistence
+function stopVisualizer() {
+  if (audioState.animationId) {
+    cancelAnimationFrame(audioState.animationId);
+    audioState.animationId = null;
+  }
+  resetBeatState();
+  startIdleVisualization();
+}
+
+// =============================================================================
+// Canvas Setup
+// =============================================================================
+
+function resizeCanvas() {
+  const { canvas } = elements;
+  canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+  canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+  ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
+}
+
+// =============================================================================
+// Track Persistence
+// =============================================================================
+
 const STORAGE_KEY_TRACK = 'drift-last-track';
 
 function saveLastTrack() {
-  localStorage.setItem(STORAGE_KEY_TRACK, trackSelect.value);
+  localStorage.setItem(STORAGE_KEY_TRACK, elements.trackSelect.value);
 }
 
 function loadLastTrack() {
   const saved = localStorage.getItem(STORAGE_KEY_TRACK);
   if (saved && trackKeys.includes(saved)) {
-    trackSelect.value = saved;
+    elements.trackSelect.value = saved;
   }
 }
 
-// Helpers
+// =============================================================================
+// Player Controls
+// =============================================================================
+
 function getSelectedTrack() {
-  return tracks[trackSelect.value];
+  return tracks[elements.trackSelect.value];
 }
 
 function updateUI() {
   const track = getSelectedTrack();
-  bpmDisplay.textContent = `${track.bpm} BPM`;
+  elements.bpmDisplay.textContent = `${track.bpm} BPM`;
 }
 
 function setPlaying(playing) {
-  isPlaying = playing;
-  playIcon.style.display = playing ? 'none' : 'block';
-  pauseIcon.style.display = playing ? 'block' : 'none';
-  playBtn.classList.toggle('playing', playing);
+  state.isPlaying = playing;
+  elements.playIcon.style.display = playing ? 'none' : 'block';
+  elements.pauseIcon.style.display = playing ? 'block' : 'none';
+  elements.playBtn.classList.toggle('playing', playing);
 }
 
 function play() {
-  if (!strudelReady) return;
-  if (!analyser) initVisualizer();
-  const track = getSelectedTrack();
+  if (!state.strudelReady) return;
+  if (!audioState.analyser) initVisualizer();
 
-  // Stop idle visualization before starting audio-reactive one
   stopIdleVisualization();
 
-  // Update visual theme for this track
-  const newTheme = getThemeForTrack(trackSelect.value);
-  targetTheme = { ...newTheme, bgColor: [...newTheme.bgColor] };
+  const newTheme = getThemeForTrack(elements.trackSelect.value);
+  theme.target = { ...newTheme, bgColor: [...newTheme.bgColor] };
 
+  const track = getSelectedTrack();
   evaluate(track.pattern);
   setPlaying(true);
-  if (!animationId) draw();
+
+  if (!audioState.animationId) draw();
 }
 
 function stop() {
@@ -487,223 +560,120 @@ function stop() {
 }
 
 function togglePlay() {
-  if (isPlaying) {
-    stop();
-  } else {
-    play();
-  }
+  state.isPlaying ? stop() : play();
 }
 
 function switchTrack(direction) {
-  const currentIndex = trackKeys.indexOf(trackSelect.value);
-  let newIndex = currentIndex + direction;
-  if (newIndex < 0) newIndex = trackKeys.length - 1;
-  if (newIndex >= trackKeys.length) newIndex = 0;
-  trackSelect.value = trackKeys[newIndex];
+  const currentIndex = trackKeys.indexOf(elements.trackSelect.value);
+  const newIndex = (currentIndex + direction + trackKeys.length) % trackKeys.length;
+  elements.trackSelect.value = trackKeys[newIndex];
   saveLastTrack();
   updateUI();
-  if (isPlaying) play();
+  if (state.isPlaying) play();
 }
 
-// Event Listeners
-resizeCanvas();
-window.addEventListener('resize', resizeCanvas);
-
-loadLastTrack();
-updateUI();
-
-// Start idle visualization on page load
-startIdleVisualization();
-
-playBtn.addEventListener('click', togglePlay);
-prevBtn.addEventListener('click', () => switchTrack(-1));
-nextBtn.addEventListener('click', () => switchTrack(1));
-
-trackSelect.addEventListener('change', () => {
-  saveLastTrack();
-  updateUI();
-  if (isPlaying) play();
-});
-
-volumeSlider.addEventListener('input', (e) => {
-  volume = e.target.value / 100;
-  if (masterGain) {
-    masterGain.gain.value = volume;
-  }
-});
-
-// Keyboard shortcuts
-document.addEventListener('keydown', (e) => {
-  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-
-  switch (e.code) {
-    case 'Space':
-      e.preventDefault();
-      togglePlay();
-      break;
-    case 'ArrowLeft':
-      e.preventDefault();
-      switchTrack(-1);
-      break;
-    case 'ArrowRight':
-      e.preventDefault();
-      switchTrack(1);
-      break;
-    case 'ArrowUp':
-      e.preventDefault();
-      volumeSlider.value = Math.min(100, parseInt(volumeSlider.value, 10) + 10);
-      volumeSlider.dispatchEvent(new Event('input'));
-      break;
-    case 'ArrowDown':
-      e.preventDefault();
-      volumeSlider.value = Math.max(0, parseInt(volumeSlider.value, 10) - 10);
-      volumeSlider.dispatchEvent(new Event('input'));
-      break;
-  }
-});
-
+// =============================================================================
 // Pomodoro Timer
-const timerTimeEl = document.getElementById('timer-time');
-const timerModeEl = document.getElementById('timer-mode');
-const timerStartBtn = document.getElementById('timer-start');
-const timerResetBtn = document.getElementById('timer-reset');
-const timerSkipBtn = document.getElementById('timer-skip');
-const presetBtns = document.querySelectorAll('.preset-btn');
-
-let timerInterval = null;
-let timerSeconds = 25 * 60;
-let timerRunning = false;
-let timerMode = 'focus'; // 'focus' or 'break'
-let focusDuration = 25;
-let breakDuration = 5;
-let sessionsCompleted = 0;
-
-function formatTime(seconds) {
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-}
+// =============================================================================
 
 function updateTimerDisplay() {
-  timerTimeEl.textContent = formatTime(timerSeconds);
+  elements.timerTime.textContent = formatTime(timerState.seconds);
 }
 
 function setTimerMode(mode) {
-  timerMode = mode;
-  timerModeEl.textContent = mode === 'focus' ? 'Focus' : 'Break';
-  timerModeEl.className = `timer-mode ${mode}`;
-  timerSeconds = (mode === 'focus' ? focusDuration : breakDuration) * 60;
+  timerState.mode = mode;
+  elements.timerMode.textContent = mode === 'focus' ? 'Focus' : 'Break';
+  elements.timerMode.className = `timer-mode ${mode}`;
+  timerState.seconds = (mode === 'focus' ? timerState.focusDuration : timerState.breakDuration) * 60;
   updateTimerDisplay();
 }
 
+function playTimerSound() {
+  const audioCtx = getAudioContext();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.frequency.value = 800;
+  gain.gain.value = 0.3;
+  osc.start();
+  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+  osc.stop(audioCtx.currentTime + 0.5);
+}
+
+function showTimerNotification() {
+  if (Notification.permission !== 'granted') return;
+
+  const message = timerState.mode === 'focus'
+    ? 'Focus time! Get back to work.'
+    : 'Break time! Take a rest.';
+
+  new Notification('Drift Timer', {
+    body: message,
+    icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🎵</text></svg>',
+  });
+}
+
+function onTimerComplete() {
+  clearInterval(timerState.interval);
+  timerState.running = false;
+  playTimerSound();
+
+  setTimerMode(timerState.mode === 'focus' ? 'break' : 'focus');
+  elements.timerStartBtn.textContent = 'Start';
+  showTimerNotification();
+}
+
 function startTimer() {
-  if (timerRunning) {
+  if (timerState.running) {
     // Pause
-    clearInterval(timerInterval);
-    timerRunning = false;
-    timerStartBtn.textContent = 'Resume';
-  } else {
-    // Start
-    timerRunning = true;
-    timerStartBtn.textContent = 'Pause';
-
-    // Request notification permission on first timer start
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
-
-    // Auto-play music when starting focus timer
-    if (timerMode === 'focus' && !isPlaying) {
-      play();
-    }
-
-    timerInterval = setInterval(() => {
-      timerSeconds--;
-      updateTimerDisplay();
-
-      if (timerSeconds <= 0) {
-        clearInterval(timerInterval);
-        timerRunning = false;
-
-        // Play notification sound
-        const audioCtx = globalThis.getAudioContext();
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.frequency.value = 800;
-        gain.gain.value = 0.3;
-        osc.start();
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
-        osc.stop(audioCtx.currentTime + 0.5);
-
-        // Switch mode
-        if (timerMode === 'focus') {
-          sessionsCompleted++;
-          setTimerMode('break');
-        } else {
-          setTimerMode('focus');
-        }
-
-        timerStartBtn.textContent = 'Start';
-
-        // Show notification if permitted
-        if (Notification.permission === 'granted') {
-          new Notification('Drift Timer', {
-            body: timerMode === 'focus' ? 'Focus time! Get back to work.' : 'Break time! Take a rest.',
-            icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🎵</text></svg>'
-          });
-        }
-      }
-    }, 1000);
+    clearInterval(timerState.interval);
+    timerState.running = false;
+    elements.timerStartBtn.textContent = 'Resume';
+    return;
   }
+
+  // Start
+  timerState.running = true;
+  elements.timerStartBtn.textContent = 'Pause';
+
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+
+  if (timerState.mode === 'focus' && !state.isPlaying) {
+    play();
+  }
+
+  timerState.interval = setInterval(() => {
+    timerState.seconds--;
+    updateTimerDisplay();
+    if (timerState.seconds <= 0) onTimerComplete();
+  }, 1000);
 }
 
 function resetTimer() {
-  clearInterval(timerInterval);
-  timerRunning = false;
-  timerStartBtn.textContent = 'Start';
-  timerSeconds = (timerMode === 'focus' ? focusDuration : breakDuration) * 60;
+  clearInterval(timerState.interval);
+  timerState.running = false;
+  elements.timerStartBtn.textContent = 'Start';
+  timerState.seconds = (timerState.mode === 'focus' ? timerState.focusDuration : timerState.breakDuration) * 60;
   updateTimerDisplay();
 }
 
 function skipTimer() {
-  clearInterval(timerInterval);
-  timerRunning = false;
-  timerStartBtn.textContent = 'Start';
-
-  if (timerMode === 'focus') {
-    setTimerMode('break');
-  } else {
-    setTimerMode('focus');
-  }
+  clearInterval(timerState.interval);
+  timerState.running = false;
+  elements.timerStartBtn.textContent = 'Start';
+  setTimerMode(timerState.mode === 'focus' ? 'break' : 'focus');
 }
 
-// Timer event listeners
-timerStartBtn.addEventListener('click', startTimer);
-timerResetBtn.addEventListener('click', resetTimer);
-timerSkipBtn.addEventListener('click', skipTimer);
+// =============================================================================
+// Nature Sounds
+// =============================================================================
 
-presetBtns.forEach(btn => {
-  btn.addEventListener('click', () => {
-    presetBtns.forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-
-    focusDuration = parseInt(btn.dataset.focus, 10);
-    breakDuration = parseInt(btn.dataset.break, 10);
-
-    resetTimer();
-    setTimerMode('focus');
-  });
-});
-
-// Nature Sounds Mixer
-const soundRows = document.querySelectorAll('.sound-row');
-
-let audioCtxInitialized = false;
 const natureSounds = {};
+let natureSoundsInitialized = false;
 
-// White noise buffer generator
 function createNoiseBuffer(audioCtx, duration = 2) {
   const bufferSize = audioCtx.sampleRate * duration;
   const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
@@ -714,7 +684,6 @@ function createNoiseBuffer(audioCtx, duration = 2) {
   return buffer;
 }
 
-// Brown noise buffer (low frequency noise)
 function createBrownNoiseBuffer(audioCtx, duration = 2) {
   const bufferSize = audioCtx.sampleRate * duration;
   const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
@@ -722,110 +691,109 @@ function createBrownNoiseBuffer(audioCtx, duration = 2) {
   let lastOut = 0;
   for (let i = 0; i < bufferSize; i++) {
     const white = Math.random() * 2 - 1;
-    data[i] = (lastOut + (0.02 * white)) / 1.02;
+    data[i] = (lastOut + 0.02 * white) / 1.02;
     lastOut = data[i];
-    data[i] *= 3.5; // Normalize
+    data[i] *= 3.5;
   }
   return buffer;
 }
 
+function createFilteredNoise(audioCtx, buffer, filterConfig) {
+  const source = audioCtx.createBufferSource();
+  source.buffer = buffer;
+  source.loop = true;
+
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = filterConfig.type;
+  filter.frequency.value = filterConfig.frequency;
+  if (filterConfig.Q) filter.Q.value = filterConfig.Q;
+
+  const gain = audioCtx.createGain();
+  gain.gain.value = 0;
+
+  source.connect(filter);
+  filter.connect(gain);
+  gain.connect(audioState.masterGain);
+  source.start();
+
+  return { source, filter, gain };
+}
+
 function initNatureSounds() {
-  if (audioCtxInitialized) return;
+  if (natureSoundsInitialized) return;
 
-  const audioCtx = globalThis.getAudioContext();
+  const audioCtx = getAudioContext();
   if (!audioCtx) return;
-
-  if (!masterGain) setupMasterGain();
+  if (!audioState.masterGain) setupMasterGain();
 
   const noiseBuffer = createNoiseBuffer(audioCtx);
   const brownBuffer = createBrownNoiseBuffer(audioCtx);
 
-  // Rain - filtered white noise with gentle modulation
-  const rainSource = audioCtx.createBufferSource();
-  rainSource.buffer = noiseBuffer;
-  rainSource.loop = true;
-  const rainFilter = audioCtx.createBiquadFilter();
-  rainFilter.type = 'bandpass';
-  rainFilter.frequency.value = 3000;
-  rainFilter.Q.value = 0.5;
-  const rainGain = audioCtx.createGain();
-  rainGain.gain.value = 0;
-  rainSource.connect(rainFilter);
-  rainFilter.connect(rainGain);
-  rainGain.connect(masterGain);
-  rainSource.start();
-  natureSounds.rain = { gain: rainGain, source: rainSource };
+  // Rain - filtered white noise
+  natureSounds.rain = createFilteredNoise(audioCtx, noiseBuffer, {
+    type: 'bandpass',
+    frequency: 3000,
+    Q: 0.5,
+  });
 
-  // Wind - brown noise with slow modulation
-  const windSource = audioCtx.createBufferSource();
-  windSource.buffer = brownBuffer;
-  windSource.loop = true;
-  const windFilter = audioCtx.createBiquadFilter();
-  windFilter.type = 'lowpass';
-  windFilter.frequency.value = 400;
-  const windGain = audioCtx.createGain();
-  windGain.gain.value = 0;
-  // Add subtle modulation
+  // Wind - brown noise with LFO modulation
+  const wind = createFilteredNoise(audioCtx, brownBuffer, {
+    type: 'lowpass',
+    frequency: 400,
+  });
   const windLFO = audioCtx.createOscillator();
   const windLFOGain = audioCtx.createGain();
   windLFO.frequency.value = 0.2;
   windLFOGain.gain.value = 100;
   windLFO.connect(windLFOGain);
-  windLFOGain.connect(windFilter.frequency);
+  windLFOGain.connect(wind.filter.frequency);
   windLFO.start();
-  windSource.connect(windFilter);
-  windFilter.connect(windGain);
-  windGain.connect(masterGain);
-  windSource.start();
-  natureSounds.wind = { gain: windGain, source: windSource, lfo: windLFO };
+  natureSounds.wind = { ...wind, lfo: windLFO };
 
   // Thunder - low rumble
-  const thunderSource = audioCtx.createBufferSource();
-  thunderSource.buffer = brownBuffer;
-  thunderSource.loop = true;
-  const thunderFilter = audioCtx.createBiquadFilter();
-  thunderFilter.type = 'lowpass';
-  thunderFilter.frequency.value = 100;
-  const thunderGain = audioCtx.createGain();
-  thunderGain.gain.value = 0;
-  thunderSource.connect(thunderFilter);
-  thunderFilter.connect(thunderGain);
-  thunderGain.connect(masterGain);
-  thunderSource.start();
-  natureSounds.thunder = { gain: thunderGain, source: thunderSource };
+  natureSounds.thunder = createFilteredNoise(audioCtx, brownBuffer, {
+    type: 'lowpass',
+    frequency: 100,
+  });
 
-  // Fire - crackling noise
+  // Fire - crackling noise with modulation
   const fireSource = audioCtx.createBufferSource();
   fireSource.buffer = noiseBuffer;
   fireSource.loop = true;
-  const fireFilter = audioCtx.createBiquadFilter();
-  fireFilter.type = 'highpass';
-  fireFilter.frequency.value = 1000;
-  const fireFilter2 = audioCtx.createBiquadFilter();
-  fireFilter2.type = 'lowpass';
-  fireFilter2.frequency.value = 4000;
-  const fireGain = audioCtx.createGain();
-  fireGain.gain.value = 0;
-  // Crackling modulation
+
+  const fireHP = audioCtx.createBiquadFilter();
+  fireHP.type = 'highpass';
+  fireHP.frequency.value = 1000;
+
+  const fireLP = audioCtx.createBiquadFilter();
+  fireLP.type = 'lowpass';
+  fireLP.frequency.value = 4000;
+
   const fireLFO = audioCtx.createOscillator();
   fireLFO.type = 'square';
   fireLFO.frequency.value = 8;
   const fireLFOGain = audioCtx.createGain();
   fireLFOGain.gain.value = 0.5;
   fireLFO.connect(fireLFOGain);
+
   const fireModGain = audioCtx.createGain();
   fireModGain.gain.value = 0;
   fireLFOGain.connect(fireModGain.gain);
-  fireSource.connect(fireFilter);
-  fireFilter.connect(fireFilter2);
-  fireFilter2.connect(fireModGain);
+
+  const fireGain = audioCtx.createGain();
+  fireGain.gain.value = 0;
+
+  fireSource.connect(fireHP);
+  fireHP.connect(fireLP);
+  fireLP.connect(fireModGain);
   fireModGain.connect(fireGain);
-  fireGain.connect(masterGain);
+  fireGain.connect(audioState.masterGain);
   fireSource.start();
   fireLFO.start();
-  natureSounds.fire = { gain: fireGain, modGain: fireModGain, source: fireSource, lfo: fireLFO };
 
-  audioCtxInitialized = true;
+  natureSounds.fire = { source: fireSource, gain: fireGain, modGain: fireModGain, lfo: fireLFO };
+
+  natureSoundsInitialized = true;
 }
 
 function setNatureSoundVolume(sound, value) {
@@ -833,65 +801,41 @@ function setNatureSoundVolume(sound, value) {
 
   const normalizedValue = value / 100;
   const soundObj = natureSounds[sound];
+  if (!soundObj) return;
 
-  if (soundObj) {
-    const targetGain = normalizedValue * 0.4; // Max volume cap
-    soundObj.gain.gain.setTargetAtTime(targetGain, globalThis.getAudioContext().currentTime, 0.1);
+  const targetGain = normalizedValue * 0.4;
+  const audioCtx = getAudioContext();
+  soundObj.gain.gain.setTargetAtTime(targetGain, audioCtx.currentTime, 0.1);
 
-    // Special handling for fire crackling intensity
-    if (sound === 'fire' && soundObj.modGain) {
-      soundObj.modGain.gain.setTargetAtTime(targetGain, globalThis.getAudioContext().currentTime, 0.1);
-    }
+  if (sound === 'fire' && soundObj.modGain) {
+    soundObj.modGain.gain.setTargetAtTime(targetGain, audioCtx.currentTime, 0.1);
   }
 }
 
-// Sound slider handlers
-soundRows.forEach(row => {
-  const slider = row.querySelector('.sound-slider');
-  const soundType = row.dataset.sound;
+// =============================================================================
+// Tasks
+// =============================================================================
 
-  slider.addEventListener('input', (e) => {
-    const value = parseInt(e.target.value);
-    setNatureSoundVolume(soundType, value);
-
-    if (value > 0) {
-      row.classList.add('active');
-    } else {
-      row.classList.remove('active');
-    }
-  });
-});
-
-// Quick Tasks
-const taskInput = document.getElementById('task-input');
-const taskList = document.getElementById('task-list');
-const tasksCount = document.getElementById('tasks-count');
-
-let tasks = JSON.parse(localStorage.getItem('drift-tasks') || '[]');
+const STORAGE_KEY_TASKS = 'drift-tasks';
+let tasks = JSON.parse(localStorage.getItem(STORAGE_KEY_TASKS) || '[]');
 
 function saveTasks() {
-  localStorage.setItem('drift-tasks', JSON.stringify(tasks));
+  localStorage.setItem(STORAGE_KEY_TASKS, JSON.stringify(tasks));
 }
 
 function updateTasksCount() {
   const remaining = tasks.filter(t => !t.done).length;
   if (remaining > 0) {
-    tasksCount.textContent = `${remaining} left`;
+    elements.tasksCount.textContent = `${remaining} left`;
   } else if (tasks.length > 0) {
-    tasksCount.textContent = 'All done!';
+    elements.tasksCount.textContent = 'All done!';
   } else {
-    tasksCount.textContent = '';
+    elements.tasksCount.textContent = '';
   }
 }
 
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
 function renderTasks() {
-  taskList.innerHTML = tasks.map((task, i) => `
+  elements.taskList.innerHTML = tasks.map((task, i) => `
     <li class="task-item ${task.done ? 'done' : ''}" data-index="${i}">
       <span class="task-check"></span>
       <span class="task-text">${escapeHtml(task.text)}</span>
@@ -920,24 +864,129 @@ function deleteTask(index) {
   renderTasks();
 }
 
-taskInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    addTask(taskInput.value);
-    taskInput.value = '';
+// =============================================================================
+// Event Listeners
+// =============================================================================
+
+function setupEventListeners() {
+  // Canvas resize
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  // Player controls
+  elements.playBtn.addEventListener('click', togglePlay);
+  elements.prevBtn.addEventListener('click', () => switchTrack(-1));
+  elements.nextBtn.addEventListener('click', () => switchTrack(1));
+
+  elements.trackSelect.addEventListener('change', () => {
+    saveLastTrack();
+    updateUI();
+    if (state.isPlaying) play();
+  });
+
+  elements.volumeSlider.addEventListener('input', (e) => {
+    state.volume = e.target.value / 100;
+    if (audioState.masterGain) {
+      audioState.masterGain.gain.value = state.volume;
+    }
+  });
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+
+    const handlers = {
+      Space: () => { e.preventDefault(); togglePlay(); },
+      ArrowLeft: () => { e.preventDefault(); switchTrack(-1); },
+      ArrowRight: () => { e.preventDefault(); switchTrack(1); },
+      ArrowUp: () => {
+        e.preventDefault();
+        elements.volumeSlider.value = Math.min(100, parseInt(elements.volumeSlider.value, 10) + 10);
+        elements.volumeSlider.dispatchEvent(new Event('input'));
+      },
+      ArrowDown: () => {
+        e.preventDefault();
+        elements.volumeSlider.value = Math.max(0, parseInt(elements.volumeSlider.value, 10) - 10);
+        elements.volumeSlider.dispatchEvent(new Event('input'));
+      },
+    };
+
+    if (handlers[e.code]) handlers[e.code]();
+  });
+
+  // Timer
+  elements.timerStartBtn.addEventListener('click', startTimer);
+  elements.timerResetBtn.addEventListener('click', resetTimer);
+  elements.timerSkipBtn.addEventListener('click', skipTimer);
+
+  elements.presetBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      elements.presetBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      timerState.focusDuration = parseInt(btn.dataset.focus, 10);
+      timerState.breakDuration = parseInt(btn.dataset.break, 10);
+      resetTimer();
+      setTimerMode('focus');
+    });
+  });
+
+  // Nature sounds
+  elements.soundRows.forEach(row => {
+    const slider = row.querySelector('.sound-slider');
+    const soundType = row.dataset.sound;
+
+    slider.addEventListener('input', (e) => {
+      const value = parseInt(e.target.value);
+      setNatureSoundVolume(soundType, value);
+      row.classList.toggle('active', value > 0);
+    });
+  });
+
+  // Tasks
+  elements.taskInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      addTask(elements.taskInput.value);
+      elements.taskInput.value = '';
+    }
+  });
+
+  elements.taskList.addEventListener('click', (e) => {
+    const item = e.target.closest('.task-item');
+    if (!item) return;
+
+    const index = parseInt(item.dataset.index, 10);
+    if (e.target.classList.contains('task-delete')) {
+      deleteTask(index);
+    } else {
+      toggleTask(index);
+    }
+  });
+}
+
+// =============================================================================
+// Initialization
+// =============================================================================
+
+async function init() {
+  try {
+    await initStrudel();
+    state.strudelReady = true;
+    elements.loading.classList.add('hidden');
+  } catch (err) {
+    console.error('Failed to initialize Strudel:', err);
+    elements.loading.querySelector('.loading-text').textContent = 'Failed to load audio engine. Please refresh.';
+    elements.loading.querySelector('.spinner').style.display = 'none';
+    elements.playBtn.disabled = true;
+    elements.playBtn.style.opacity = '0.5';
+    elements.playBtn.style.cursor = 'not-allowed';
+    return;
   }
-});
 
-taskList.addEventListener('click', (e) => {
-  const item = e.target.closest('.task-item');
-  if (!item) return;
-  const index = parseInt(item.dataset.index, 10);
+  loadLastTrack();
+  updateUI();
+  setupEventListeners();
+  renderTasks();
+  startIdleVisualization();
+}
 
-  if (e.target.classList.contains('task-delete')) {
-    deleteTask(index);
-  } else {
-    toggleTask(index);
-  }
-});
-
-renderTasks();
-
+init();
