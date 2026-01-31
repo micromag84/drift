@@ -21,7 +21,6 @@ const elements = {
   canvas: document.getElementById('visualizer'),
   // Timer
   timerTime: document.getElementById('timer-time'),
-  timerMode: document.getElementById('timer-mode'),
   timerStartBtn: document.getElementById('timer-start'),
   timerResetBtn: document.getElementById('timer-reset'),
   timerSkipBtn: document.getElementById('timer-skip'),
@@ -32,6 +31,15 @@ const elements = {
   taskInput: document.getElementById('task-input'),
   taskList: document.getElementById('task-list'),
   tasksCount: document.getElementById('tasks-count'),
+  // Breathing
+  breathingCircle: document.getElementById('breathing-circle'),
+  breathingPhase: document.getElementById('breathing-phase'),
+  breathingTimer: document.getElementById('breathing-timer'),
+  breathingRounds: document.getElementById('breathing-rounds'),
+  breathingStartBtn: document.getElementById('breathing-start'),
+  breathingStopBtn: document.getElementById('breathing-stop'),
+  breathingPresetBtns: document.querySelectorAll('.breathing-preset-btn'),
+  breathingRoundsBtns: document.querySelectorAll('.breathing-rounds-btn'),
 };
 
 const ctx = elements.canvas.getContext('2d');
@@ -72,6 +80,35 @@ const timerState = {
   mode: 'focus',
   focusDuration: 25,
   breakDuration: 5,
+};
+
+// Breathing patterns: arrays of { phase, duration } objects
+const breathingPatterns = {
+  box: [
+    { phase: 'inhale', duration: 4 },
+    { phase: 'hold', duration: 4 },
+    { phase: 'exhale', duration: 4 },
+    { phase: 'hold', duration: 4 },
+  ],
+  '478': [
+    { phase: 'inhale', duration: 4 },
+    { phase: 'hold', duration: 7 },
+    { phase: 'exhale', duration: 8 },
+  ],
+  relaxing: [
+    { phase: 'inhale', duration: 4 },
+    { phase: 'exhale', duration: 6 },
+  ],
+};
+
+const breathingState = {
+  running: false,
+  pattern: 'box',
+  phaseIndex: 0,
+  secondsLeft: 0,
+  interval: null,
+  rounds: 0,
+  targetRounds: 4,
 };
 
 // Theme state with smooth transitions
@@ -585,8 +622,6 @@ function updateTimerDisplay() {
 
 function setTimerMode(mode) {
   timerState.mode = mode;
-  elements.timerMode.textContent = mode === 'focus' ? 'Focus' : 'Break';
-  elements.timerMode.className = `timer-mode ${mode}`;
   timerState.seconds = (mode === 'focus' ? timerState.focusDuration : timerState.breakDuration) * 60;
   updateTimerDisplay();
 }
@@ -868,6 +903,157 @@ function deleteTask(index) {
 }
 
 // =============================================================================
+// Breathing Exercise
+// =============================================================================
+
+function getCurrentBreathingPhase() {
+  const pattern = breathingPatterns[breathingState.pattern];
+  return pattern[breathingState.phaseIndex];
+}
+
+function getPhaseLabel(phase) {
+  const labels = {
+    inhale: 'Breathe In',
+    hold: 'Hold',
+    exhale: 'Breathe Out',
+  };
+  return labels[phase] || phase;
+}
+
+function updateBreathingDisplay() {
+  const phase = getCurrentBreathingPhase();
+  elements.breathingPhase.textContent = getPhaseLabel(phase.phase);
+  elements.breathingTimer.textContent = breathingState.secondsLeft;
+}
+
+function updateRoundsDisplay() {
+  if (breathingState.rounds > 0) {
+    if (breathingState.targetRounds > 0) {
+      elements.breathingRounds.textContent = `${breathingState.rounds} of ${breathingState.targetRounds}`;
+    } else {
+      elements.breathingRounds.textContent = `Round ${breathingState.rounds}`;
+    }
+  } else {
+    elements.breathingRounds.textContent = '';
+  }
+}
+
+function applyBreathingAnimation(phase) {
+  const circle = elements.breathingCircle;
+
+  if (phase.phase === 'inhale') {
+    circle.style.transition = `transform ${phase.duration}s ease-in-out`;
+    circle.style.transform = 'scale(1.8)';
+  } else if (phase.phase === 'exhale') {
+    circle.style.transition = `transform ${phase.duration}s ease-in-out`;
+    circle.style.transform = 'scale(1)';
+  }
+  // For 'hold', we don't change anything - circle stays at current size
+}
+
+function advanceBreathingPhase() {
+  const pattern = breathingPatterns[breathingState.pattern];
+  const nextIndex = (breathingState.phaseIndex + 1) % pattern.length;
+
+  // Completed a full cycle
+  if (nextIndex === 0) {
+    // Check if we've reached the target
+    if (breathingState.targetRounds > 0 && breathingState.rounds >= breathingState.targetRounds) {
+      completeBreathing();
+      return;
+    }
+    breathingState.rounds++;
+    updateRoundsDisplay();
+  }
+
+  breathingState.phaseIndex = nextIndex;
+
+  const phase = getCurrentBreathingPhase();
+  breathingState.secondsLeft = phase.duration;
+
+  applyBreathingAnimation(phase);
+  updateBreathingDisplay();
+}
+
+function breathingTick() {
+  breathingState.secondsLeft--;
+
+  if (breathingState.secondsLeft <= 0) {
+    advanceBreathingPhase();
+  } else {
+    updateBreathingDisplay();
+  }
+}
+
+function startBreathing() {
+  if (breathingState.running) return;
+
+  breathingState.running = true;
+  breathingState.phaseIndex = 0;
+  breathingState.rounds = 1;
+
+  const phase = getCurrentBreathingPhase();
+  breathingState.secondsLeft = phase.duration;
+
+  // Ensure circle starts at scale 1
+  elements.breathingCircle.style.transition = 'none';
+  elements.breathingCircle.style.transform = 'scale(1)';
+  // Force reflow before applying new transition
+  void elements.breathingCircle.offsetWidth;
+
+  elements.breathingCircle.classList.add('active');
+  applyBreathingAnimation(phase);
+  updateBreathingDisplay();
+  updateRoundsDisplay();
+
+  elements.breathingStartBtn.textContent = 'Running';
+  elements.breathingStartBtn.disabled = true;
+
+  breathingState.interval = setInterval(breathingTick, 1000);
+}
+
+function stopBreathing() {
+  if (!breathingState.running) return;
+
+  breathingState.running = false;
+  clearInterval(breathingState.interval);
+  breathingState.interval = null;
+  breathingState.rounds = 0;
+
+  elements.breathingCircle.classList.remove('active');
+  elements.breathingCircle.style.transition = 'transform 0.5s ease-out';
+  elements.breathingCircle.style.transform = 'scale(1)';
+  elements.breathingPhase.textContent = '';
+  elements.breathingTimer.textContent = '';
+  updateRoundsDisplay();
+
+  elements.breathingStartBtn.textContent = 'Start';
+  elements.breathingStartBtn.disabled = false;
+}
+
+function completeBreathing() {
+  breathingState.running = false;
+  clearInterval(breathingState.interval);
+  breathingState.interval = null;
+
+  elements.breathingCircle.classList.remove('active');
+  elements.breathingCircle.style.transition = 'transform 0.5s ease-out';
+  elements.breathingCircle.style.transform = 'scale(1)';
+  elements.breathingPhase.textContent = 'Complete';
+  elements.breathingTimer.textContent = '';
+
+  elements.breathingStartBtn.textContent = 'Start';
+  elements.breathingStartBtn.disabled = false;
+}
+
+function setBreathingPattern(pattern) {
+  if (breathingState.running) {
+    stopBreathing();
+  }
+  breathingState.pattern = pattern;
+}
+
+// =============================================================================
 // Event Listeners
 // =============================================================================
 
@@ -963,6 +1149,29 @@ function setupEventListeners() {
     } else {
       toggleTask(index);
     }
+  });
+
+  // Breathing
+  elements.breathingStartBtn.addEventListener('click', startBreathing);
+  elements.breathingStopBtn.addEventListener('click', stopBreathing);
+
+  elements.breathingPresetBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      elements.breathingPresetBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      setBreathingPattern(btn.dataset.pattern);
+    });
+  });
+
+  elements.breathingRoundsBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      elements.breathingRoundsBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      breathingState.targetRounds = parseInt(btn.dataset.rounds, 10);
+      if (breathingState.running) {
+        updateRoundsDisplay();
+      }
+    });
   });
 }
 

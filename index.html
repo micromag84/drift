@@ -456,6 +456,193 @@
       color: #7c9eb8;
     }
 
+    .breathing-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 20px;
+      padding: 1.5rem;
+      margin-top: 1.5rem;
+    }
+
+    .breathing-header {
+      position: relative;
+      margin-bottom: 1.25rem;
+    }
+
+    .breathing-title {
+      font-size: 0.7rem;
+      color: #6b7394;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+    }
+
+    .breathing-rounds {
+      position: absolute;
+      right: 0;
+      font-size: 0.65rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 20px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      background: rgba(124, 158, 184, 0.2);
+      color: #7c9eb8;
+    }
+
+    .breathing-rounds:empty {
+      display: none;
+    }
+
+    .breathing-visual {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 1.25rem;
+    }
+
+    .breathing-circle-container {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .breathing-circle {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(124, 158, 184, 0.4) 0%, rgba(124, 158, 184, 0.1) 70%, transparent 100%);
+      border: 2px solid rgba(124, 158, 184, 0.3);
+      transform: scale(1);
+      transition: border-color 0.3s ease, background 0.3s ease;
+    }
+
+    .breathing-circle.active {
+      border-color: rgba(124, 158, 184, 0.6);
+    }
+
+    .breathing-phase {
+      margin-top: 1rem;
+      font-size: 1.1rem;
+      color: #7c9eb8;
+      font-weight: 300;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      min-height: 1.5rem;
+    }
+
+    .breathing-timer {
+      font-size: 0.85rem;
+      color: #5a6384;
+      margin-top: 0.25rem;
+      font-variant-numeric: tabular-nums;
+      min-height: 1.25rem;
+    }
+
+    .breathing-controls {
+      display: flex;
+      justify-content: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .breathing-btn {
+      padding: 0.6rem 1.25rem;
+      border-radius: 10px;
+      border: 1px solid rgba(124, 158, 184, 0.2);
+      background: transparent;
+      color: #9ba4c0;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .breathing-btn:hover {
+      border-color: #7c9eb8;
+      color: #e0e4ef;
+      background: rgba(124, 158, 184, 0.1);
+    }
+
+    .breathing-btn.primary {
+      background: rgba(124, 158, 184, 0.15);
+      border-color: rgba(124, 158, 184, 0.3);
+      color: #7c9eb8;
+    }
+
+    .breathing-btn.primary:hover {
+      background: rgba(124, 158, 184, 0.25);
+    }
+
+    .breathing-presets {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .breathing-preset-btn {
+      padding: 0.4rem 0.7rem;
+      border-radius: 6px;
+      border: none;
+      background: rgba(255,255,255,0.05);
+      color: #6b7394;
+      font-size: 0.65rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .breathing-preset-btn:hover {
+      background: rgba(124, 158, 184, 0.15);
+      color: #9ba4c0;
+    }
+
+    .breathing-preset-btn.active {
+      background: rgba(124, 158, 184, 0.2);
+      color: #7c9eb8;
+    }
+
+    .breathing-rounds-presets {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+
+    .breathing-rounds-label {
+      font-size: 0.6rem;
+      color: #5a6384;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-right: 0.25rem;
+    }
+
+    .breathing-rounds-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255,255,255,0.05);
+      color: #6b7394;
+      font-size: 0.7rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .breathing-rounds-btn:hover {
+      background: rgba(124, 158, 184, 0.15);
+      color: #9ba4c0;
+    }
+
+    .breathing-rounds-btn.active {
+      background: rgba(124, 158, 184, 0.2);
+      color: #7c9eb8;
+    }
+
     .tasks-card {
       background: rgba(255,255,255,0.03);
       border: 1px solid rgba(255,255,255,0.06);
@@ -754,7 +941,6 @@
     <div class="timer-card">
       <div class="timer-header">
         <span class="timer-title">Pomodoro Timer</span>
-        <span class="timer-mode focus" id="timer-mode">Focus</span>
       </div>
       <div class="timer-display">
         <span class="timer-time" id="timer-time">25:00</span>
@@ -768,6 +954,36 @@
         <button class="preset-btn active" data-focus="25" data-break="5">25/5</button>
         <button class="preset-btn" data-focus="50" data-break="10">50/10</button>
         <button class="preset-btn" data-focus="90" data-break="20">90/20</button>
+      </div>
+    </div>
+
+    <div class="breathing-card">
+      <div class="breathing-header">
+        <span class="breathing-title">Breathing Exercise</span>
+        <span class="breathing-rounds" id="breathing-rounds"></span>
+      </div>
+      <div class="breathing-visual">
+        <div class="breathing-circle-container">
+          <div class="breathing-circle" id="breathing-circle"></div>
+        </div>
+        <div class="breathing-phase" id="breathing-phase"></div>
+        <div class="breathing-timer" id="breathing-timer"></div>
+      </div>
+      <div class="breathing-controls">
+        <button class="breathing-btn primary" id="breathing-start">Start</button>
+        <button class="breathing-btn" id="breathing-stop">Stop</button>
+      </div>
+      <div class="breathing-presets">
+        <button class="breathing-preset-btn active" data-pattern="box" title="4s in, 4s hold, 4s out, 4s hold">Box</button>
+        <button class="breathing-preset-btn" data-pattern="478" title="4s in, 7s hold, 8s out">4-7-8</button>
+        <button class="breathing-preset-btn" data-pattern="relaxing" title="4s in, 6s out">Relaxing</button>
+      </div>
+      <div class="breathing-rounds-presets">
+        <span class="breathing-rounds-label">Rounds</span>
+        <button class="breathing-rounds-btn active" data-rounds="4">4</button>
+        <button class="breathing-rounds-btn" data-rounds="6">6</button>
+        <button class="breathing-rounds-btn" data-rounds="8">8</button>
+        <button class="breathing-rounds-btn" data-rounds="0">∞</button>
       </div>
     </div>
 
