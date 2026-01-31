@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Drift is a focus & relaxation web app that generates ambient music using Strudel, a live coding music library. Features include 24 mood presets across 6 categories, canvas-based audio visualizer, Pomodoro timer, synthesized nature sounds mixer (rain, wind, thunder, fire), and a quick tasks list with localStorage persistence.
+Drift is a focus & relaxation web app that generates ambient music using Strudel, a live coding music library. Features include 24 mood presets across 6 categories, canvas-based audio visualizer, tabbed Focus/Relax modes with Pomodoro timer & tasks (Focus) and breathing exercises (Relax), synthesized nature sounds mixer (rain, wind, thunder, fire), and localStorage persistence.
 
 ## Commands
 
@@ -20,9 +20,17 @@ Minimal single-page application with no build-time framework.
 
 ### File Structure
 
-- **index.html** - Complete UI with inline CSS (~600 lines of styles)
+- **index.html** - Complete UI with inline CSS (~800 lines of styles)
 - **main.js** - Application logic organized into sections
 - **tracks.js** - Track definitions, visual themes, and category mappings
+
+### UI Structure
+
+The app uses a tabbed interface below the player:
+- **Focus tab**: Pomodoro timer + Tasks list (productivity mode)
+- **Relax tab**: Breathing exercise with animated circle guide (wellness mode)
+
+Mode switching is handled via `.mode-tab` buttons that toggle `.mode-content` visibility.
 
 ### main.js Organization
 
@@ -31,7 +39,7 @@ The file is organized into clearly labeled sections:
 | Section | Purpose |
 |---------|---------|
 | DOM Elements | `elements` object containing all UI references |
-| State | `state`, `audioState`, `beatState`, `timerState`, `theme` objects |
+| State | `state`, `audioState`, `beatState`, `timerState`, `breathingState`, `theme` objects |
 | Utilities | `lerp()`, `formatTime()`, `escapeHtml()` |
 | Theme Management | Theme transitions between track categories |
 | Audio Setup | Master gain, analyser, audio routing |
@@ -41,17 +49,19 @@ The file is organized into clearly labeled sections:
 | Pomodoro Timer | Timer logic with notifications |
 | Nature Sounds | Synthesized ambient sounds |
 | Tasks | Task list with localStorage persistence |
+| Breathing Exercise | Guided breathing with patterns (Box, 4-7-8, Calm) and countdown |
 | Event Listeners | `setupEventListeners()` centralizes all handlers |
 | Initialization | `init()` async entry point |
 
 ### State Objects
 
 ```javascript
-state         // isPlaying, volume, strudelReady, time
-audioState    // analyser, masterGain, dataArray, animationId, idleAnimationId
-beatState     // prevBass, energy, decay, history, rings, particles
-timerState    // interval, seconds, running, mode, focusDuration, breakDuration
-theme         // current, target (for smooth transitions)
+state           // isPlaying, volume, strudelReady, time
+audioState      // analyser, masterGain, dataArray, animationId, idleAnimationId
+beatState       // prevBass, energy, decay, history, rings, particles
+timerState      // interval, seconds, running, mode, focusDuration, breakDuration
+breathingState  // running, countdown, pattern, phaseIndex, secondsLeft, rounds, targetRounds
+theme           // current, target (for smooth transitions)
 ```
 
 ### Audio System

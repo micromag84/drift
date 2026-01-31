@@ -19,6 +19,10 @@ const elements = {
   volumeSlider: document.getElementById('volume'),
   bpmDisplay: document.getElementById('bpm'),
   canvas: document.getElementById('visualizer'),
+  // Mode tabs
+  modeTabs: document.querySelectorAll('.mode-tab'),
+  focusContent: document.getElementById('focus-content'),
+  relaxContent: document.getElementById('relax-content'),
   // Timer
   timerTime: document.getElementById('timer-time'),
   timerStartBtn: document.getElementById('timer-start'),
@@ -103,6 +107,8 @@ const breathingPatterns = {
 
 const breathingState = {
   running: false,
+  countdown: false,
+  countdownInterval: null,
   pattern: 'box',
   phaseIndex: 0,
   secondsLeft: 0,
@@ -985,9 +991,32 @@ function breathingTick() {
   }
 }
 
-function startBreathing() {
-  if (breathingState.running) return;
+function startBreathingCountdown() {
+  if (breathingState.running || breathingState.countdown) return;
 
+  breathingState.countdown = true;
+  elements.breathingStartBtn.textContent = 'Get Ready';
+  elements.breathingStartBtn.disabled = true;
+  elements.breathingCircle.classList.add('active');
+
+  let count = 3;
+  elements.breathingPhase.textContent = 'Get Ready';
+  elements.breathingTimer.textContent = count;
+
+  breathingState.countdownInterval = setInterval(() => {
+    count--;
+    if (count > 0) {
+      elements.breathingTimer.textContent = count;
+    } else {
+      clearInterval(breathingState.countdownInterval);
+      breathingState.countdownInterval = null;
+      breathingState.countdown = false;
+      startBreathing();
+    }
+  }, 1000);
+}
+
+function startBreathing() {
   breathingState.running = true;
   breathingState.phaseIndex = 0;
   breathingState.rounds = 1;
@@ -998,26 +1027,37 @@ function startBreathing() {
   // Ensure circle starts at scale 1
   elements.breathingCircle.style.transition = 'none';
   elements.breathingCircle.style.transform = 'scale(1)';
-  // Force reflow before applying new transition
-  void elements.breathingCircle.offsetWidth;
 
-  elements.breathingCircle.classList.add('active');
-  applyBreathingAnimation(phase);
+  // Force reflow then start animation on next frame
+  void elements.breathingCircle.offsetWidth;
+  requestAnimationFrame(() => {
+    applyBreathingAnimation(phase);
+  });
+
   updateBreathingDisplay();
   updateRoundsDisplay();
 
   elements.breathingStartBtn.textContent = 'Running';
-  elements.breathingStartBtn.disabled = true;
 
   breathingState.interval = setInterval(breathingTick, 1000);
 }
 
 function stopBreathing() {
-  if (!breathingState.running) return;
+  if (!breathingState.running && !breathingState.countdown) return;
 
+  // Clear countdown if active
+  if (breathingState.countdownInterval) {
+    clearInterval(breathingState.countdownInterval);
+    breathingState.countdownInterval = null;
+  }
+  breathingState.countdown = false;
+
+  // Clear breathing interval if active
+  if (breathingState.interval) {
+    clearInterval(breathingState.interval);
+    breathingState.interval = null;
+  }
   breathingState.running = false;
-  clearInterval(breathingState.interval);
-  breathingState.interval = null;
   breathingState.rounds = 0;
 
   elements.breathingCircle.classList.remove('active');
@@ -1151,8 +1191,25 @@ function setupEventListeners() {
     }
   });
 
+  // Mode tabs
+  elements.modeTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      elements.modeTabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+
+      const mode = tab.dataset.mode;
+      if (mode === 'focus') {
+        elements.focusContent.classList.remove('hidden');
+        elements.relaxContent.classList.add('hidden');
+      } else {
+        elements.focusContent.classList.add('hidden');
+        elements.relaxContent.classList.remove('hidden');
+      }
+    });
+  });
+
   // Breathing
-  elements.breathingStartBtn.addEventListener('click', startBreathing);
+  elements.breathingStartBtn.addEventListener('click', startBreathingCountdown);
   elements.breathingStopBtn.addEventListener('click', stopBreathing);
 
   elements.breathingPresetBtns.forEach(btn => {

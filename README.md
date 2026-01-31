@@ -1,16 +1,18 @@
 # Drift
 
-A calm focus & relaxation web app with generative ambient music, audio visualization, and Pomodoro timer.
+Ambient music for deep work & calm.
+
+**Live:** https://driftsound.vercel.app
 
 ## Features
 
 - **24 Mood Presets** - Focus, Chill, Nature, Ambient, Wellness, and Moody categories
-- **Generative Music** - Infinite ambient soundscapes powered by Strudel live coding
+- **Generative Music** - Infinite ambient soundscapes that never repeat
 - **Audio Visualizer** - Flowing waves and particles that react to the music
 - **Nature Sounds Mixer** - Layer rain, wind, thunder, and fire ambience
-- **Pomodoro Timer** - Focus timer with 25/5, 50/10, and 90/20 presets
-- **Quick Tasks** - Simple task list with localStorage persistence
-- **Keyboard Controls** - Space to play/pause, arrows to switch moods and adjust volume
+- **Focus Mode** - Pomodoro timer (25/5, 50/10, 90/20) with task list
+- **Relax Mode** - Guided breathing exercises (Box, 4-7-8, Calm patterns)
+- **Keyboard Controls** - Space to play/pause, arrows to navigate
 
 ## Getting Started
 
