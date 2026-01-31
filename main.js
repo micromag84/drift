@@ -47,6 +47,7 @@ let time = 0;
 let volume = 0.7;
 let masterGain = null;
 let strudelReady = false;
+let idleAnimationId = null;
 
 // Beat detection state
 let prevBass = 0;
@@ -335,14 +336,99 @@ function stopVisualizer() {
   beatRings = [];
   beatParticles = [];
 
-  // Fade out using current theme background
-  const fadeOut = () => {
-    const bg = currentTheme.bgColor;
-    ctx.fillStyle = `rgba(${Math.round(bg[0])}, ${Math.round(bg[1])}, ${Math.round(bg[2])}, 0.1)`;
-    ctx.fillRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
-  };
-  for (let i = 0; i < 20; i++) {
-    setTimeout(fadeOut, i * 50);
+  // Start idle visualization instead of fading out
+  startIdleVisualization();
+}
+
+// Idle visualization - calm ambient animation when not playing
+function drawIdle() {
+  const width = canvas.offsetWidth;
+  const height = canvas.offsetHeight;
+
+  // Smoothly transition theme colors
+  updateThemeTransition();
+
+  time += 0.004 * currentTheme.speed;
+
+  // Gentle fade using theme background
+  const bg = currentTheme.bgColor;
+  ctx.fillStyle = `rgba(${Math.round(bg[0])}, ${Math.round(bg[1])}, ${Math.round(bg[2])}, 0.06)`;
+  ctx.fillRect(0, 0, width, height);
+
+  const themeHue = currentTheme.baseHue;
+  const themeSat = currentTheme.saturation;
+
+  // Soft flowing waves - gentle idle animation
+  const waves = currentTheme.waveCount;
+  for (let w = 0; w < waves; w++) {
+    ctx.beginPath();
+    const baseY = height * (0.25 + w * (0.5 / waves));
+    const amplitude = 10 + w * 3;
+    const frequency = 0.006 + w * 0.0015;
+    const speed = time * (0.4 + w * 0.15);
+    const alpha = 0.08 - w * 0.015;
+
+    for (let x = 0; x <= width; x += 4) {
+      const y = baseY +
+        Math.sin(x * frequency + speed) * amplitude +
+        Math.sin(x * frequency * 2.3 + speed * 1.3) * (amplitude * 0.4);
+
+      if (x === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    }
+
+    const hue = themeHue + w * 15;
+    ctx.strokeStyle = `hsla(${hue}, ${themeSat - 10}%, 55%, ${alpha})`;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+
+  // Gentle floating particles
+  const particles = Math.floor(currentTheme.particleCount * 0.6);
+  for (let i = 0; i < particles; i++) {
+    const x = (Math.sin(time * 0.2 + i * 0.9) * 0.35 + 0.5) * width;
+    const y = (Math.cos(time * 0.15 + i * 0.7) * 0.25 + 0.5) * height;
+    const size = 1.5 + Math.sin(time + i) * 0.5;
+    const alpha = 0.12 + Math.sin(time * 0.5 + i * 0.3) * 0.05;
+
+    ctx.beginPath();
+    ctx.arc(x, y, size, 0, Math.PI * 2);
+    ctx.fillStyle = `hsla(${themeHue + i * 8}, ${themeSat}%, 65%, ${alpha})`;
+    ctx.fill();
+  }
+
+  // Subtle central glow
+  const glowSize = 30 + Math.sin(time * 0.3) * 5;
+  const glowAlpha = 0.06 + Math.sin(time * 0.4) * 0.02;
+
+  const gradient = ctx.createRadialGradient(
+    width / 2, height / 2, 0,
+    width / 2, height / 2, glowSize * currentTheme.glowIntensity
+  );
+  gradient.addColorStop(0, `hsla(${themeHue}, ${themeSat}%, 55%, ${glowAlpha * currentTheme.glowIntensity})`);
+  gradient.addColorStop(0.6, `hsla(${themeHue}, ${themeSat}%, 55%, ${glowAlpha * 0.3 * currentTheme.glowIntensity})`);
+  gradient.addColorStop(1, `hsla(${themeHue}, ${themeSat}%, 55%, 0)`);
+
+  ctx.beginPath();
+  ctx.arc(width / 2, height / 2, glowSize * currentTheme.glowIntensity, 0, Math.PI * 2);
+  ctx.fillStyle = gradient;
+  ctx.fill();
+
+  idleAnimationId = requestAnimationFrame(drawIdle);
+}
+
+function startIdleVisualization() {
+  if (idleAnimationId) return; // Already running
+  drawIdle();
+}
+
+function stopIdleVisualization() {
+  if (idleAnimationId) {
+    cancelAnimationFrame(idleAnimationId);
+    idleAnimationId = null;
   }
 }
 
@@ -381,6 +467,9 @@ function play() {
   if (!strudelReady) return;
   if (!analyser) initVisualizer();
   const track = getSelectedTrack();
+
+  // Stop idle visualization before starting audio-reactive one
+  stopIdleVisualization();
 
   // Update visual theme for this track
   const newTheme = getThemeForTrack(trackSelect.value);
@@ -422,6 +511,9 @@ window.addEventListener('resize', resizeCanvas);
 
 loadLastTrack();
 updateUI();
+
+// Start idle visualization on page load
+startIdleVisualization();
 
 playBtn.addEventListener('click', togglePlay);
 prevBtn.addEventListener('click', () => switchTrack(-1));
