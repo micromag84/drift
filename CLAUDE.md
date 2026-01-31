@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Drift is a focus & relaxation web app that generates ambient music using Strudel, a live coding music library. Features include 24 mood presets across 6 categories, canvas-based audio visualizer, tabbed Focus/Relax modes with Pomodoro timer & tasks (Focus) and breathing exercises (Relax), synthesized nature sounds mixer (rain, wind, thunder, fire), and localStorage persistence.
+Drift is a focus & calm web app that generates ambient music using Strudel, a live coding music library. Features include 24 mood presets across 6 categories, canvas-based audio visualizer, tabbed Focus/Calm modes with Pomodoro timer & tasks (Focus) and breathing exercises (Calm), synthesized nature sounds mixer (rain, wind, thunder, fire), and localStorage persistence.
 
 ## Commands
 
@@ -28,7 +28,7 @@ Minimal single-page application with no build-time framework.
 
 The app uses a tabbed interface below the player:
 - **Focus tab**: Pomodoro timer + Tasks list (productivity mode)
-- **Relax tab**: Breathing exercise with animated circle guide (wellness mode)
+- **Calm tab**: Breathing exercise with animated circle guide (wellness mode)
 
 Mode switching is handled via `.mode-tab` buttons that toggle `.mode-content` visibility.
 

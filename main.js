@@ -22,7 +22,7 @@ const elements = {
   // Mode tabs
   modeTabs: document.querySelectorAll('.mode-tab'),
   focusContent: document.getElementById('focus-content'),
-  relaxContent: document.getElementById('relax-content'),
+  calmContent: document.getElementById('calm-content'),
   // Timer
   timerTime: document.getElementById('timer-time'),
   timerStartBtn: document.getElementById('timer-start'),
@@ -1200,10 +1200,10 @@ function setupEventListeners() {
       const mode = tab.dataset.mode;
       if (mode === 'focus') {
         elements.focusContent.classList.remove('hidden');
-        elements.relaxContent.classList.add('hidden');
+        elements.calmContent.classList.add('hidden');
       } else {
         elements.focusContent.classList.add('hidden');
-        elements.relaxContent.classList.remove('hidden');
+        elements.calmContent.classList.remove('hidden');
       }
     });
   });

@@ -1,7 +1,7 @@
 {
-  "name": "Drift - Focus & Relaxation",
+  "name": "Drift - Focus & Calm",
   "short_name": "Drift",
-  "description": "Ambient music for focus and relaxation with mood presets, visualizer, Pomodoro timer, and nature sounds",
+  "description": "Ambient music for focus and calm with mood presets, visualizer, Pomodoro timer, and nature sounds",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#1a1c2e",

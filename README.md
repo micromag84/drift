@@ -1,6 +1,6 @@
 # Drift
 
-Ambient music for deep work & calm.
+Ambient music for focus & calm.
 
 **Live:** https://driftsound.vercel.app
 
@@ -11,7 +11,7 @@ Ambient music for deep work & calm.
 - **Audio Visualizer** - Flowing waves and particles that react to the music
 - **Nature Sounds Mixer** - Layer rain, wind, thunder, and fire ambience
 - **Focus Mode** - Pomodoro timer (25/5, 50/10, 90/20) with task list
-- **Relax Mode** - Guided breathing exercises (Box, 4-7-8, Calm patterns)
+- **Calm Mode** - Guided breathing exercises (Box, 4-7-8, Calm patterns)
 - **Keyboard Controls** - Space to play/pause, arrows to navigate
 
 ## Getting Started
