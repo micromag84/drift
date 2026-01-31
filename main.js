@@ -346,6 +346,20 @@ function stopVisualizer() {
   }
 }
 
+// Track persistence
+const STORAGE_KEY_TRACK = 'drift-last-track';
+
+function saveLastTrack() {
+  localStorage.setItem(STORAGE_KEY_TRACK, trackSelect.value);
+}
+
+function loadLastTrack() {
+  const saved = localStorage.getItem(STORAGE_KEY_TRACK);
+  if (saved && trackKeys.includes(saved)) {
+    trackSelect.value = saved;
+  }
+}
+
 // Helpers
 function getSelectedTrack() {
   return tracks[trackSelect.value];
@@ -397,6 +411,7 @@ function switchTrack(direction) {
   if (newIndex < 0) newIndex = trackKeys.length - 1;
   if (newIndex >= trackKeys.length) newIndex = 0;
   trackSelect.value = trackKeys[newIndex];
+  saveLastTrack();
   updateUI();
   if (isPlaying) play();
 }
@@ -405,6 +420,7 @@ function switchTrack(direction) {
 resizeCanvas();
 window.addEventListener('resize', resizeCanvas);
 
+loadLastTrack();
 updateUI();
 
 playBtn.addEventListener('click', togglePlay);
@@ -412,6 +428,7 @@ prevBtn.addEventListener('click', () => switchTrack(-1));
 nextBtn.addEventListener('click', () => switchTrack(1));
 
 trackSelect.addEventListener('change', () => {
+  saveLastTrack();
   updateUI();
   if (isPlaying) play();
 });
