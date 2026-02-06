@@ -1238,7 +1238,11 @@ function setupEventListeners() {
 
 async function init() {
   try {
-    await initStrudel();
+    // Use 'playback' category so iOS Safari plays audio even when the mute switch is on
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)({
+      webkitAudioCategory: 'playback',
+    });
+    await initStrudel({ audioContext });
     state.strudelReady = true;
     elements.loading.classList.add('hidden');
   } catch (err) {
