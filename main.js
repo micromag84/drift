@@ -141,6 +141,49 @@ const escapeHtml = (text) => {
   return div.innerHTML;
 };
 
+// iOS mute switch workaround: ensure audio plays even when the hardware
+// mute switch is on by switching from "Ambient" to "Playback" audio session.
+function unmuteIOS() {
+  // Modern Audio Session API (Safari 17+ / iOS 17+)
+  if (navigator.audioSession) {
+    navigator.audioSession.type = 'playback';
+  }
+
+  // Fallback: play a silent <audio> element to force the Playback session.
+  // Detect iOS including iPadOS (which reports as "Macintosh").
+  const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+    (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
+  if (!isIOS) return;
+
+  let unmuted = false;
+  const events = ['click', 'touchend', 'keydown'];
+
+  function handleInteraction() {
+    if (unmuted) return;
+    unmuted = true;
+
+    const sampleRate = new AudioContext().sampleRate;
+    const ab = new ArrayBuffer(10);
+    const dv = new DataView(ab);
+    dv.setUint32(0, sampleRate, true);
+    dv.setUint32(4, sampleRate, true);
+    dv.setUint16(8, 1, true);
+    const chars = btoa(String.fromCharCode(...new Uint8Array(ab))).slice(0, 13);
+
+    const audio = document.createElement('audio');
+    audio.setAttribute('x-webkit-airplay', 'deny');
+    audio.preload = 'auto';
+    audio.loop = true;
+    audio.src = `data:audio/wav;base64,UklGRisAAABXQVZFZm10IBAAAAABAAEA${chars}AgAZGF0YQcAAACAgICAgICAAAA=`;
+    audio.load();
+    audio.play().catch(() => { unmuted = false; });
+
+    events.forEach(e => window.removeEventListener(e, handleInteraction, { capture: true }));
+  }
+
+  events.forEach(e => window.addEventListener(e, handleInteraction, { capture: true, passive: true }));
+}
+
 // =============================================================================
 // Theme Management
 // =============================================================================
@@ -1238,6 +1281,7 @@ function setupEventListeners() {
 
 async function init() {
   try {
+    unmuteIOS();
     await initStrudel();
     state.strudelReady = true;
     elements.loading.classList.add('hidden');
