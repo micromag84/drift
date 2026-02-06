@@ -210,7 +210,7 @@ function initVisualizer() {
 function detectBeat(bass) {
   const { history, historyIndex } = beatState;
 
-  history[beatState.historyIndex] = bass;
+  history[historyIndex] = bass;
   beatState.historyIndex = (historyIndex + 1) % history.length;
 
   const avgEnergy = history.reduce((a, b) => a + b, 0) / history.length;
@@ -1165,7 +1165,7 @@ function setupEventListeners() {
     const soundType = row.dataset.sound;
 
     slider.addEventListener('input', (e) => {
-      const value = parseInt(e.target.value);
+      const value = parseInt(e.target.value, 10);
       setNatureSoundVolume(soundType, value);
       row.classList.toggle('active', value > 0);
     });
