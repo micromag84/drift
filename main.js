@@ -608,14 +608,16 @@ function resizeCanvas() {
 const STORAGE_KEY_TRACK = 'drift-last-track';
 
 function saveLastTrack() {
-  localStorage.setItem(STORAGE_KEY_TRACK, elements.trackSelect.value);
+  try { localStorage.setItem(STORAGE_KEY_TRACK, elements.trackSelect.value); } catch {}
 }
 
 function loadLastTrack() {
-  const saved = localStorage.getItem(STORAGE_KEY_TRACK);
-  if (saved && trackKeys.includes(saved)) {
-    elements.trackSelect.value = saved;
-  }
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY_TRACK);
+    if (saved && trackKeys.includes(saved)) {
+      elements.trackSelect.value = saved;
+    }
+  } catch {}
 }
 
 // =============================================================================
@@ -623,7 +625,10 @@ function loadLastTrack() {
 // =============================================================================
 
 function getSelectedTrack() {
-  return tracks[elements.trackSelect.value];
+  const track = tracks[elements.trackSelect.value];
+  if (track) return track;
+  elements.trackSelect.value = trackKeys[0];
+  return tracks[trackKeys[0]];
 }
 
 function updateUI() {
@@ -744,6 +749,7 @@ function startTimer() {
     play();
   }
 
+  clearInterval(timerState.interval);
   timerState.interval = setInterval(() => {
     timerState.seconds--;
     updateTimerDisplay();
@@ -893,6 +899,15 @@ function initNatureSounds() {
   natureSounds.fire = { source: fireSource, gain: fireGain, modGain: fireModGain, lfo: fireLFO };
 
   natureSoundsInitialized = true;
+
+  window.addEventListener('pagehide', cleanupNatureSounds);
+}
+
+function cleanupNatureSounds() {
+  for (const sound of Object.values(natureSounds)) {
+    try { sound.source?.stop(); } catch {}
+    try { sound.lfo?.stop(); } catch {}
+  }
 }
 
 function setNatureSoundVolume(sound, value) {
@@ -916,10 +931,12 @@ function setNatureSoundVolume(sound, value) {
 // =============================================================================
 
 const STORAGE_KEY_TASKS = 'drift-tasks';
-let tasks = JSON.parse(localStorage.getItem(STORAGE_KEY_TASKS) || '[]');
+let tasks = (() => {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY_TASKS) || '[]'); } catch { return []; }
+})();
 
 function saveTasks() {
-  localStorage.setItem(STORAGE_KEY_TASKS, JSON.stringify(tasks));
+  try { localStorage.setItem(STORAGE_KEY_TASKS, JSON.stringify(tasks)); } catch {}
 }
 
 function updateTasksCount() {
@@ -1073,6 +1090,7 @@ function startBreathingCountdown() {
   elements.breathingPhase.textContent = 'Get Ready';
   elements.breathingTimer.textContent = count;
 
+  clearInterval(breathingState.countdownInterval);
   breathingState.countdownInterval = setInterval(() => {
     count--;
     if (count > 0) {
@@ -1109,6 +1127,7 @@ function startBreathing() {
 
   elements.breathingStartBtn.textContent = 'Running';
 
+  clearInterval(breathingState.interval);
   breathingState.interval = setInterval(breathingTick, 1000);
 }
 
@@ -1172,6 +1191,23 @@ function setupEventListeners() {
   resizeCanvas();
   window.addEventListener('resize', resizeCanvas);
 
+  // Pause animations when tab is hidden to save CPU/battery
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      if (audioState.animationId) {
+        cancelAnimationFrame(audioState.animationId);
+        audioState.animationId = null;
+      }
+      stopIdleVisualization();
+    } else {
+      if (state.isPlaying && !audioState.animationId) {
+        draw();
+      } else if (!state.isPlaying && !audioState.idleAnimationId) {
+        startIdleVisualization();
+      }
+    }
+  });
+
   // Player controls
   elements.playBtn.addEventListener('click', togglePlay);
   elements.prevBtn.addEventListener('click', () => switchTrack(-1));
@@ -1186,7 +1222,10 @@ function setupEventListeners() {
   elements.volumeSlider.addEventListener('input', (e) => {
     state.volume = e.target.value / 100;
     if (audioState.masterGain) {
-      audioState.masterGain.gain.value = state.volume;
+      const audioCtx = getAudioContext();
+      if (audioCtx) {
+        audioState.masterGain.gain.setTargetAtTime(state.volume, audioCtx.currentTime, 0.02);
+      }
     }
   });
 
