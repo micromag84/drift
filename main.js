@@ -136,9 +136,12 @@ const formatTime = (seconds) => {
 };
 
 const escapeHtml = (text) => {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 };
 
 // iOS mute switch workaround: ensure audio plays even when the hardware
@@ -214,18 +217,23 @@ function updateThemeTransition() {
 // =============================================================================
 
 function getAudioContext() {
+  if (typeof globalThis.getAudioContext !== 'function') return null;
   return globalThis.getAudioContext();
 }
 
 function setupMasterGain() {
   const audioCtx = getAudioContext();
+  if (!audioCtx) return;
   audioState.masterGain = audioCtx.createGain();
   audioState.masterGain.gain.value = state.volume;
   audioState.masterGain.connect(audioCtx.destination);
 }
 
+let originalAudioConnect = null;
+
 function initVisualizer() {
   const audioCtx = getAudioContext();
+  if (!audioCtx) return;
 
   if (!audioState.masterGain) setupMasterGain();
 
@@ -235,15 +243,19 @@ function initVisualizer() {
   audioState.dataArray = new Uint8Array(audioState.analyser.frequencyBinCount);
   audioState.analyser.connect(audioState.masterGain);
 
-  // Monkey-patch AudioNode.connect to route all audio through analyser
-  const dest = audioCtx.destination;
-  const originalConnect = AudioNode.prototype.connect;
-  AudioNode.prototype.connect = function(target, ...args) {
-    if (target === dest && this !== audioState.analyser && this !== audioState.masterGain) {
-      return originalConnect.call(this, audioState.analyser, ...args);
-    }
-    return originalConnect.call(this, target, ...args);
-  };
+  // Patch AudioNode.connect to route audio through our analyser.
+  // Only intercepts connections targeting this context's destination;
+  // all other connect() calls pass through unchanged.
+  if (!originalAudioConnect) {
+    const dest = audioCtx.destination;
+    originalAudioConnect = AudioNode.prototype.connect;
+    AudioNode.prototype.connect = function(target, ...args) {
+      if (target === dest && this !== audioState.analyser && this !== audioState.masterGain) {
+        return originalAudioConnect.call(this, audioState.analyser, ...args);
+      }
+      return originalAudioConnect.call(this, target, ...args);
+    };
+  }
 }
 
 // =============================================================================
@@ -922,13 +934,28 @@ function updateTasksCount() {
 }
 
 function renderTasks() {
-  elements.taskList.innerHTML = tasks.map((task, i) => `
-    <li class="task-item ${task.done ? 'done' : ''}" data-index="${i}">
-      <span class="task-check"></span>
-      <span class="task-text">${escapeHtml(task.text)}</span>
-      <span class="task-delete">×</span>
-    </li>
-  `).join('');
+  const fragment = document.createDocumentFragment();
+  tasks.forEach((task, i) => {
+    const li = document.createElement('li');
+    li.className = `task-item${task.done ? ' done' : ''}`;
+    li.dataset.index = i;
+
+    const check = document.createElement('span');
+    check.className = 'task-check';
+
+    const text = document.createElement('span');
+    text.className = 'task-text';
+    text.textContent = task.text;
+
+    const del = document.createElement('span');
+    del.className = 'task-delete';
+    del.textContent = '\u00d7';
+
+    li.append(check, text, del);
+    fragment.appendChild(li);
+  });
+  elements.taskList.innerHTML = '';
+  elements.taskList.appendChild(fragment);
   updateTasksCount();
 }
 
