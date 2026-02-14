@@ -29,7 +29,7 @@
       <p class="tagline">Ambient music for focus & calm</p>
     </header>
 
-    <canvas id="visualizer"></canvas>
+    <canvas id="visualizer" aria-hidden="true"></canvas>
 
     <div class="player-card">
       <div class="mood-selector">
@@ -91,7 +91,7 @@
         <span class="volume-label">Volume</span>
         <div class="volume-control">
           <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3z"/></svg>
-          <input type="range" class="volume-slider" id="volume" min="0" max="100" value="70">
+          <input type="range" class="volume-slider" id="volume" min="0" max="100" value="70" aria-label="Volume">
           <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
         </div>
       </div>
@@ -101,19 +101,19 @@
         <div class="ambience-grid">
           <div class="sound-row" data-sound="rain">
             <span class="sound-icon">🌧</span>
-            <input type="range" class="sound-slider" min="0" max="100" value="0">
+            <input type="range" class="sound-slider" min="0" max="100" value="0" aria-label="Rain volume">
           </div>
           <div class="sound-row" data-sound="wind">
             <span class="sound-icon">💨</span>
-            <input type="range" class="sound-slider" min="0" max="100" value="0">
+            <input type="range" class="sound-slider" min="0" max="100" value="0" aria-label="Wind volume">
           </div>
           <div class="sound-row" data-sound="thunder">
             <span class="sound-icon">⛈</span>
-            <input type="range" class="sound-slider" min="0" max="100" value="0">
+            <input type="range" class="sound-slider" min="0" max="100" value="0" aria-label="Thunder volume">
           </div>
           <div class="sound-row" data-sound="fire">
             <span class="sound-icon">🔥</span>
-            <input type="range" class="sound-slider" min="0" max="100" value="0">
+            <input type="range" class="sound-slider" min="0" max="100" value="0" aria-label="Fire volume">
           </div>
         </div>
       </div>
@@ -130,7 +130,7 @@
         <div class="timer-section">
           <div class="section-title">Pomodoro</div>
           <div class="timer-display">
-            <span class="timer-time" id="timer-time">25:00</span>
+            <span class="timer-time" id="timer-time" aria-live="off" aria-atomic="true">25:00</span>
           </div>
           <div class="timer-controls">
             <button class="timer-btn primary" id="timer-start">Start</button>
@@ -164,8 +164,8 @@
             <div class="breathing-circle-container">
               <div class="breathing-circle" id="breathing-circle"></div>
             </div>
-            <div class="breathing-phase" id="breathing-phase"></div>
-            <div class="breathing-timer" id="breathing-timer"></div>
+            <div class="breathing-phase" id="breathing-phase" aria-live="assertive"></div>
+            <div class="breathing-timer" id="breathing-timer" aria-live="off" aria-atomic="true"></div>
           </div>
           <div class="breathing-controls">
             <button class="breathing-btn primary" id="breathing-start">Start</button>

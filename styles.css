@@ -799,6 +799,18 @@ kbd {
   padding: 0 0.5rem;
 }
 
+.play-btn:focus-visible,
+.skip-btn:focus-visible,
+.timer-btn:focus-visible,
+.breathing-btn:focus-visible,
+.mode-tab:focus-visible,
+.preset-btn:focus-visible,
+.breathing-preset-btn:focus-visible,
+.breathing-rounds-btn:focus-visible {
+  outline: 2px solid #7c9eb8;
+  outline-offset: 2px;
+}
+
 @media (max-width: 500px) {
   .container { padding: 1.5rem 1rem; }
   header { margin-bottom: 1.25rem; }

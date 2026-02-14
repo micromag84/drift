@@ -723,8 +723,16 @@ function onTimerComplete() {
   timerState.running = false;
   playTimerSound();
 
-  setTimerMode(timerState.mode === 'focus' ? 'break' : 'focus');
+  const nextMode = timerState.mode === 'focus' ? 'break' : 'focus';
+  setTimerMode(nextMode);
   elements.timerStartBtn.textContent = 'Start';
+  // Briefly enable aria-live so screen readers announce the mode change
+  elements.timerTime.setAttribute('aria-live', 'assertive');
+  elements.timerTime.textContent = `${nextMode === 'focus' ? 'Focus' : 'Break'} — ${formatTime(timerState.seconds)}`;
+  setTimeout(() => {
+    elements.timerTime.setAttribute('aria-live', 'off');
+    updateTimerDisplay();
+  }, 2000);
   showTimerNotification();
 }
 
@@ -1358,6 +1366,7 @@ async function init() {
     elements.playBtn.disabled = true;
     elements.playBtn.style.opacity = '0.5';
     elements.playBtn.style.cursor = 'not-allowed';
+    elements.playBtn.setAttribute('aria-label', 'Play unavailable — audio engine failed to load');
     return;
   }
 
